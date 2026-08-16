@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEVA-NEXUS — Emergency Resource Coordination</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --bg:#07111f; --bg2:#0b1728; --surface:#0f1d30; --surface2:#13243a;
+  --surface3:#172a43; --border:#203650; --border2:#294562;
+  --text:#f4f7fb; --muted:#9aabc0; --faint:#61758e;
+  --accent:#ffb72b; --accent2:#ffd166; --cyan:#34d5c2; --blue:#5da9ff;
+  --red:#ff6b57; --violet:#9d8cff; --green:#45e0a2;
+  --shadow:0 18px 45px rgba(0,0,0,.22);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100vh;background:
+ radial-gradient(circle at 82% 8%,rgba(55,120,255,.10),transparent 28%),
+ radial-gradient(circle at 18% 0%,rgba(255,183,43,.06),transparent 24%),var(--bg)}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#29415d;border-radius:20px}::-webkit-scrollbar-track{background:transparent}
+::selection{background:var(--accent);color:#111}
+h1,h2,h3,.display{font-family:"Space Grotesk",Inter,sans-serif}
+.mono{font-family:"JetBrains Mono",monospace}
+.card{background:linear-gradient(180deg,rgba(19,36,58,.96),rgba(12,27,45,.96));border:1px solid rgba(63,92,120,.42);border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,.14)}
+.card-2{background:rgba(16,34,55,.86);border:1px solid rgba(62,91,120,.40);border-radius:14px}
+.card:hover{border-color:rgba(89,125,159,.58)}
+.btn-primary,.btn-teal,.btn-ghost{min-height:42px;padding-inline:16px;font-weight:700;letter-spacing:.01em;cursor:pointer;transition:.18s ease}
+.btn-primary{background:linear-gradient(135deg,#ffd166,#f3a91f);color:#171006;border:1px solid rgba(255,255,255,.18);border-radius:11px;box-shadow:0 10px 25px rgba(255,183,43,.20)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(255,183,43,.27);filter:brightness(1.03)}
+.btn-primary:active{transform:translateY(0) scale(.99)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-teal{background:linear-gradient(135deg,#43e4ca,#20b99f);color:#06271f;border:0;border-radius:11px;box-shadow:0 10px 25px rgba(52,213,194,.15)}
+.btn-teal:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.btn-ghost{background:rgba(18,37,59,.75);border:1px solid #294562;color:var(--text);border-radius:11px}
+.btn-ghost:hover{background:#19304b;border-color:#45627e;transform:translateY(-1px)}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.06em;padding:5px 9px;border-radius:999px;white-space:nowrap}
+.badge-ver{background:rgba(52,213,194,.10);color:var(--cyan);border:1px solid rgba(52,213,194,.20)}
+.badge-unver{background:rgba(255,183,43,.09);color:var(--accent2);border:1px solid rgba(255,183,43,.18)}
+.badge-critical{background:rgba(255,107,87,.10);color:#ff8878;border:1px solid rgba(255,107,87,.22)}
+.badge-high{background:rgba(255,183,43,.10);color:var(--accent2);border:1px solid rgba(255,183,43,.20)}
+.badge-medium{background:rgba(93,169,255,.10);color:#82bcff;border:1px solid rgba(93,169,255,.18)}
+.badge-low{background:rgba(97,117,142,.10);color:#9bacc0;border:1px solid rgba(97,117,142,.20)}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;box-shadow:0 0 0 3px rgba(255,255,255,.025)}
+.tab-btn{padding:9px 13px;border-radius:9px;font-weight:650;font-size:12px;color:#91a4bb;cursor:pointer;transition:.18s;border:1px solid transparent;white-space:nowrap}
+.tab-btn:hover{color:#fff;background:rgba(255,255,255,.035)}
+.tab-btn.active{background:linear-gradient(180deg,rgba(40,65,91,.95),rgba(25,45,67,.95));color:#fff;border-color:#35536f;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.tab-btn.active .tab-dot{background:var(--accent)!important;box-shadow:0 0 8px rgba(255,183,43,.7)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.score-ring{position:relative;width:58px;height:58px;flex-shrink:0}.score-ring svg{transform:rotate(-90deg)}.score-ring .txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:800}
+.lifecycle{display:flex;align-items:flex-start;width:100%;gap:0}.lc-step{flex:1;text-align:center;position:relative;font-size:8px;color:#52667d;font-weight:700;letter-spacing:.02em;line-height:1.25}.lc-step .dot{width:10px;height:10px;border-radius:50%;background:#20364d;margin:0 auto 6px;border:2px solid #0d1a2a;position:relative;z-index:2}.lc-step .line{position:absolute;top:4px;left:-50%;width:100%;height:2px;background:#20364d;z-index:1}.lc-step:first-child .line{display:none}.lc-step.done .dot{background:var(--cyan)}.lc-step.done .line{background:var(--cyan)}.lc-step.current .dot{background:var(--accent);box-shadow:0 0 0 4px rgba(255,183,43,.14),0 0 12px rgba(255,183,43,.4)}.lc-step.current{color:var(--accent2)}.lc-step.done{color:#72ddc8}
+.terminal{background:#06101b;border:1px solid #203a54;border-radius:13px;padding:15px 16px;font-family:"JetBrains Mono",monospace;font-size:11.5px;line-height:1.9;min-height:120px;box-shadow:inset 0 0 30px rgba(0,0,0,.18)}.terminal .ok{color:var(--cyan)}.terminal .caret:after{content:"▌";animation:blink 1s step-end infinite;color:var(--accent)}@keyframes blink{50%{opacity:0}}
+.fade-in{animation:fadeIn .35s ease both}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.pulse-dot{animation:pulse 1.8s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.toast{background:#12243a;border:1px solid #35536f;border-radius:13px;box-shadow:0 18px 40px rgba(0,0,0,.42)}
+input,textarea,select{outline:none!important;color:var(--text);background:#0e2135!important;border:1px solid #2b4660!important}input:focus,textarea:focus,select:focus{border-color:#537494!important;box-shadow:0 0 0 3px rgba(93,169,255,.08)}input::placeholder,textarea::placeholder{color:#60748c}
+.zone-gap-critical{border-color:rgba(255,107,87,.38)!important;background:linear-gradient(180deg,rgba(255,107,87,.08),rgba(255,107,87,.02))}.zone-gap-good{border-color:rgba(52,213,194,.30)!important;background:linear-gradient(180deg,rgba(52,213,194,.07),rgba(52,213,194,.02))}
+.metric-arrow{color:#53677e}
+#map{height:100%;width:100%;border-radius:15px;filter:saturate(.65) brightness(.78) invert(1) hue-rotate(180deg) contrast(.96)}
+.leaflet-popup-content-wrapper{background:#102238;color:#eef4fb;border:1px solid #36536f;border-radius:12px;font-family:Inter,sans-serif;box-shadow:0 15px 35px rgba(0,0,0,.4)}.leaflet-popup-tip{background:#102238}.leaflet-popup-content{margin:11px 13px;font-size:12px}
+.scrollbox{max-height:520px;overflow-y:auto;padding-right:3px}.flash{animation:flashbg 1.1s ease}@keyframes flashbg{0%{background:rgba(255,183,43,.14)}100%{background:transparent}}
+.brand-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ffd166,#f3a91f);display:flex;align-items:center;justify-content:center;font-family:"Space Grotesk";font-size:18px;font-weight:800;color:#171006;box-shadow:0 0 0 1px rgba(255,255,255,.12),0 10px 25px rgba(255,183,43,.20)}
+.app-header{position:sticky;top:0;z-index:40;background:rgba(7,17,31,.84);backdrop-filter:blur(18px);border-bottom:1px solid rgba(55,82,108,.55)}
+.header-inner{max-width:1500px;margin:auto;padding:13px 22px 0}.brand-sub{font-size:10px;color:#6f8399;letter-spacing:.02em;margin-top:2px}.live-pill{display:inline-flex;align-items:center;gap:6px}.live-pill:before{content:"";width:6px;height:6px;border-radius:50%;background:#ff6b57;box-shadow:0 0 10px #ff6b57}.role-switch{background:#0c1b2d;border:1px solid #29435d;border-radius:12px;padding:3px}
+.topnav{display:flex;align-items:center;gap:4px;overflow-x:auto;padding:9px 0 10px;margin-top:8px;border-top:1px solid rgba(55,82,108,.20)}
+.hero-shell{position:relative;overflow:hidden;padding:28px 30px;margin-bottom:18px;border-radius:22px;background:linear-gradient(120deg,#102640 0%,#0d1f35 55%,#0b192b 100%);border:1px solid #294762;box-shadow:var(--shadow)}
+.hero-shell:after{content:"";position:absolute;width:340px;height:340px;right:-120px;top:-150px;border-radius:50%;background:radial-gradient(circle,rgba(255,183,43,.18),transparent 67%);pointer-events:none}.hero-shell:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);background-size:30px 30px;opacity:.6}
+.hero-content{position:relative;z-index:1}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;color:var(--accent2);text-transform:uppercase}.hero-title{font-size:clamp(25px,3vw,39px);line-height:1.02;letter-spacing:-.04em;margin:8px 0 10px;max-width:700px}.hero-title span{color:var(--accent2)}.hero-copy{font-size:13px;line-height:1.7;color:#a8b8cb;max-width:650px;margin:0}.hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.hero-meta{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px}.hero-stat strong{font:700 20px "Space Grotesk";display:block}.hero-stat small{display:block;color:#71859c;font-size:9px;letter-spacing:.10em;text-transform:uppercase;margin-top:2px}.hero-panel{position:absolute;right:30px;top:50%;transform:translateY(-50%);width:280px;padding:16px;border-radius:16px;background:rgba(8,20,34,.72);border:1px solid #355673;box-shadow:0 22px 50px rgba(0,0,0,.28);z-index:2}.hero-panel .mini-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(68,96,123,.22);font-size:11px}.hero-panel .mini-row:last-child{border-bottom:0}.hero-panel .mini-label{color:#7890a8}.hero-panel .mini-value{font-weight:800;color:#eaf2fa}.hero-panel .signal{color:var(--cyan)}
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:13px}.section-title{font-size:15px;font-weight:800;letter-spacing:-.02em;margin:0}.section-sub{font-size:11px;color:#71869e;margin:4px 0 0;line-height:1.5}.section-kicker{font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#61758d}
+.stat-card{position:relative;overflow:hidden;padding:15px 16px;min-height:88px}.stat-card:after{content:"";position:absolute;right:-22px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,var(--stat-color,rgba(255,255,255,.10)),transparent 68%);opacity:.28}.stat-label{font-size:9px;font-weight:800;letter-spacing:.10em;color:#6d8299;text-transform:uppercase}.stat-value{font:700 25px "Space Grotesk";margin-top:6px}.stat-note{font-size:9px;color:#60758c;margin-top:2px}
+.command-card{padding:22px}.command-input{min-height:112px!important;font-size:13px!important;line-height:1.65!important;padding:14px!important;resize:vertical}.ai-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;border-radius:999px;background:rgba(93,169,255,.08);border:1px solid rgba(93,169,255,.18);color:#83bfff;font-size:9px;font-weight:800;letter-spacing:.08em}.ai-chip:before{content:"";width:6px;height:6px;border-radius:50%;background:#83bfff;box-shadow:0 0 9px rgba(93,169,255,.8)}
+.detect-card{padding:16px;border-radius:15px;background:linear-gradient(135deg,rgba(35,53,73,.92),rgba(18,34,53,.92));border:1px solid rgba(255,183,43,.25);box-shadow:0 10px 30px rgba(0,0,0,.15)}.detect-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.detect-item{padding:10px;border-radius:10px;background:#0c1b2c;border:1px solid #243d56}.detect-label{font-size:8px;color:#60758c;letter-spacing:.08em;font-weight:800}.detect-value{font-size:11px;font-weight:750;margin-top:4px;line-height:1.3}
+.bundle-card{border:1px solid rgba(52,213,194,.20);background:linear-gradient(180deg,rgba(18,42,55,.90),rgba(14,31,47,.94))}.bundle-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:13px 0}.bundle-stat{padding:10px;border-radius:10px;background:rgba(6,19,31,.42);border:1px solid rgba(62,93,119,.28);text-align:center}.bundle-stat strong{font:700 17px "Space Grotesk";display:block}.bundle-stat span{font-size:8px;color:#6e8299;letter-spacing:.08em;text-transform:uppercase}
+.entity-row{padding:12px;border-radius:13px;background:rgba(18,36,56,.70);border:1px solid rgba(54,80,105,.35);display:flex;align-items:center;gap:12px;transition:.16s}.entity-row:hover{background:#162d46;border-color:#3d5b78;transform:translateX(1px)}
+.mission-card{padding:15px;background:linear-gradient(180deg,#142a42,#102238);border:1px solid #294762;border-radius:15px}.mission-title{font-size:13px;font-weight:800;line-height:1.35}.mission-meta{font-size:10.5px;color:#7d91a8}.mission-resource{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(65,91,116,.20)}.mission-resource:last-child{border-bottom:0}
+.quick-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 13px;border:1px solid rgba(60,89,115,.34);background:rgba(12,27,44,.65);border-radius:13px}.quick-bar .label{font-size:9px;font-weight:800;letter-spacing:.1em;color:#657a92;text-transform:uppercase;margin-right:2px}
+@media(max-width:1100px){.hero-panel{display:none}.hero-shell{padding:25px}.lg\:col-span-3,.lg\:col-span-2{grid-column:span 1!important}}
+@media(max-width:720px){.header-inner{padding-inline:12px}.hero-shell{padding:21px 18px;border-radius:18px}.hero-title{font-size:29px}.hero-copy{font-size:12px}.hero-meta{gap:15px}.detect-grid{grid-template-columns:repeat(2,1fr)}.bundle-summary{grid-template-columns:1fr 1fr}.topnav{padding-bottom:8px}.command-card{padding:16px}.stat-card{min-height:82px}.stat-value{font-size:22px}}
+
+/* ================================================================
+   SEVA-NEXUS FINAL UI OVERRIDE — high-contrast command center
+   Preserves existing markup + JS; visual layer only.
+   ================================================================ */
+:root{
+  --bg:#050a12;
+  --bg2:#0a1220;
+  --surface:#0c1727;
+  --surface2:#101d30;
+  --surface3:#15253b;
+  --border:#243a52;
+  --border2:#3d5871;
+  --text:#f8fbff;
+  --muted:#a6b5c8;
+  --faint:#647890;
+  --accent:#ffd21f;
+  --accent-hot:#ffea66;
+  --accent-deep:#f0b900;
+  --cyan:#42e7d0;
+  --blue:#72b6ff;
+  --red:#ff6c57;
+  --green:#59e6a7;
+  --violet:#ad9cff;
+  --shadow-lg:0 28px 80px rgba(0,0,0,.42);
+  --shadow-md:0 16px 42px rgba(0,0,0,.30);
+}
+body{
+  background:
+    radial-gradient(circle at 83% -5%,rgba(255,210,31,.12),transparent 24%),
+    radial-gradient(circle at 10% 5%,rgba(77,132,255,.09),transparent 24%),
+    linear-gradient(180deg,#050a12 0%,#07111d 54%,#050a12 100%);
+  letter-spacing:.005em;
+}
+body:before{opacity:.12;background-size:34px 34px;mask-image:linear-gradient(to bottom,black 0%,rgba(0,0,0,.8) 45%,transparent 92%)}
+
+/* Header / navigation */
+.app-header{background:rgba(4,10,18,.88);border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.header-inner{padding:14px 28px 0}
+.brand-mark{width:46px;height:46px;border-radius:14px;background:linear-gradient(145deg,var(--accent-hot),var(--accent));color:#171300;font-size:20px;box-shadow:0 12px 35px rgba(255,210,31,.23),inset 0 1px 0 rgba(255,255,255,.7)}
+.brand-sub{color:#8397ad;font-size:10px}
+.topnav{padding:11px 0 13px;margin-top:10px;gap:8px;border-top:1px solid rgba(255,255,255,.06)}
+.tab-btn{min-height:42px;padding:11px 17px;border-radius:11px;font-size:12.5px;font-weight:750;border:1px solid transparent;background:transparent}
+.tab-btn:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);color:#fff}
+.tab-btn.active{background:linear-gradient(180deg,#1a2b42,#102137);border-color:#3c5771;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 7px 18px rgba(0,0,0,.18);color:#fff}
+.role-switch{background:#08121f;border-color:#2f4660;border-radius:14px;padding:4px}
+.role-switch .tab-btn{min-height:38px;padding:9px 14px}
+
+/* Buttons — large, high contrast and physical */
+.btn-primary,.btn-teal,.btn-ghost{
+  min-height:54px!important;
+  padding:0 22px!important;
+  border-radius:14px!important;
+  font-size:13px!important;
+  font-weight:850!important;
+  letter-spacing:.015em;
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+}
+.btn-primary{
+  background:linear-gradient(180deg,#ffe66d 0%,#ffd21f 52%,#f6bc08 100%);
+  color:#171300!important;
+  border:1px solid rgba(255,255,255,.32)!important;
+  box-shadow:0 15px 28px rgba(255,210,31,.20),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -2px 0 rgba(160,112,0,.22);
+  text-shadow:0 1px 0 rgba(255,255,255,.28);
+}
+.btn-primary:hover{transform:translateY(-2px) scale(1.015);box-shadow:0 20px 38px rgba(255,210,31,.26),inset 0 1px 0 rgba(255,255,255,.75),inset 0 -2px 0 rgba(160,112,0,.2);filter:none}
+.btn-primary:active{transform:translateY(1px) scale(.975)!important}
+.btn-teal{background:linear-gradient(180deg,#64f2d9,#2fd8ba 58%,#20b999);color:#041f19!important;border:1px solid rgba(255,255,255,.16)!important;box-shadow:0 15px 28px rgba(66,231,208,.16),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,70,56,.15)}
+.btn-teal:hover{transform:translateY(-2px) scale(1.015);box-shadow:0 20px 34px rgba(66,231,208,.22)}
+.btn-teal:active{transform:translateY(1px) scale(.975)!important}
+.btn-ghost{background:linear-gradient(180deg,#13263b,#0f1d2f);border:1px solid #38526b!important;color:#f3f7fb!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 10px 24px rgba(0,0,0,.18)}
+.btn-ghost:hover{background:linear-gradient(180deg,#1b3047,#13243a);border-color:#5a7793!important;transform:translateY(-2px) scale(1.012)}
+.btn-ghost:active{transform:translateY(1px) scale(.975)!important}
+
+/* Every card is a distinct solid surface — no dissolving text */
+.card{background:linear-gradient(180deg,#102036 0%,#0c1828 100%)!important;border:1px solid #2b455f!important;border-radius:20px!important;box-shadow:var(--shadow-md)!important}
+.card-2{background:linear-gradient(180deg,#14273e 0%,#0e1c2d 100%)!important;border:1px solid #35516c!important;border-radius:15px!important}
+.card-2:hover{border-color:#4b6882!important;box-shadow:0 12px 28px rgba(0,0,0,.18)}
+
+/* High-contrast data tiles */
+.stat-card{min-height:106px;padding:18px 18px;background:linear-gradient(180deg,#ffe66d 0%,#ffd21f 52%,#f0bc0b 100%)!important;border:1px solid rgba(255,255,255,.34)!important;box-shadow:0 17px 38px rgba(255,210,31,.15),inset 0 1px 0 rgba(255,255,255,.65)!important;color:#171300!important;border-radius:17px!important}
+.stat-card:before{content:"";position:absolute;inset:1px;border-radius:16px;background:linear-gradient(120deg,rgba(255,255,255,.17),transparent 38%);pointer-events:none}
+.stat-card:after{opacity:.22;background:radial-gradient(circle,rgba(255,255,255,.95),transparent 67%)}
+.stat-label{color:#5c4600!important;font-weight:900}
+.stat-value{color:#171300!important;font-size:28px!important}
+.stat-note{color:#654e00!important;font-weight:700}
+
+/* Hero */
+.hero-shell{padding:34px 34px 30px;margin-bottom:20px;border-radius:26px;background:linear-gradient(125deg,#0e233d 0%,#0c1b2f 58%,#0a1525 100%);border:1px solid #2d4a65;box-shadow:var(--shadow-lg);min-height:330px}
+.hero-shell:after{width:460px;height:460px;right:-150px;top:-180px;background:radial-gradient(circle,rgba(255,210,31,.16),transparent 65%)}
+.hero-title{font-size:clamp(30px,3.7vw,54px)!important;max-width:760px;margin-top:11px!important;line-height:1.00!important;letter-spacing:-.045em!important}
+.hero-title span{color:var(--accent-hot)!important}
+.hero-copy{font-size:14px;line-height:1.75;max-width:710px;color:#b7c5d6}
+.hero-actions{margin-top:22px;gap:12px}
+.hero-actions .btn-primary,.hero-actions .btn-ghost{min-width:190px!important}
+.hero-meta{margin-top:28px;gap:28px}
+.hero-stat strong{font-size:23px}
+.hero-panel{width:320px;padding:19px;right:34px;background:linear-gradient(180deg,rgba(16,35,55,.97),rgba(9,20,34,.97));border:1px solid #4b6680;box-shadow:0 25px 60px rgba(0,0,0,.40)}
+.hero-panel .mini-row{padding:11px 0;font-size:12px}
+.hero-panel .mini-label{color:#8ba0b5}.hero-panel .mini-value{color:#fbfdff;font-weight:850}
+
+/* Section headers / content blocks */
+.section-title{font-size:16px}.section-sub{font-size:12px;color:#8498ad}.section-kicker{color:#7c91a9}
+.command-card{padding:24px!important}
+.command-input{min-height:136px!important;background:#07121f!important;border:2px solid #2e4963!important;border-radius:15px!important;color:#f8fbff!important;font-size:14px!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 10px 24px rgba(0,0,0,.15)}
+.command-input:focus{border-color:#6886a3!important;box-shadow:0 0 0 4px rgba(255,210,31,.09),inset 0 0 0 1px rgba(255,255,255,.03)!important}
+.ai-chip{padding:7px 12px;border-radius:999px;background:#10243a;border-color:#3c5d78;color:#8fc8ff;font-size:10px}
+.ai-chip:before{background:#8fc8ff}
+.detect-card{padding:18px;background:linear-gradient(180deg,#142943,#0f1f32);border:1px solid rgba(255,210,31,.45);box-shadow:0 14px 30px rgba(0,0,0,.22)}
+.detect-grid{gap:10px}
+.detect-item{padding:12px;background:linear-gradient(180deg,#ffe66d,#ffd21f)!important;border:1px solid rgba(255,255,255,.32)!important;color:#171300!important;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 8px 18px rgba(255,210,31,.10)}
+.detect-label{color:#6a5200!important}.detect-value{color:#1b1504!important;font-size:12px}
+
+/* Bundle / mission items */
+.bundle-card{border:1px solid rgba(66,231,208,.28);background:linear-gradient(180deg,#102a31,#0e1f2f)!important}
+.bundle-summary{gap:10px}
+.bundle-stat{padding:12px;background:linear-gradient(180deg,#182b40,#102033);border:1px solid #3c5771}
+.bundle-stat strong{font-size:19px}.bundle-stat span{color:#8093a7}
+.bundle-card .card-2{background:linear-gradient(180deg,#ffe66d,#ffd21f)!important;border-color:rgba(255,255,255,.28)!important;color:#171300!important}
+.bundle-card .card-2 *{color:#171300!important}
+
+/* Resource rows: solid data blocks */
+#bundle-list .card-2,#active-missions-list .card-2,#critical-needs-list .card-2,#resource-gaps .card-2,#volunteers-grid .card,#resources-grid .card,#all-needs-list .card,#sim-needs-list .card-2{
+  background:linear-gradient(180deg,#ffe66d 0%,#ffd21f 60%,#f0bc0b 100%)!important;
+  border-color:rgba(255,255,255,.32)!important;
+  color:#171300!important;
+  box-shadow:0 12px 26px rgba(255,210,31,.10),inset 0 1px 0 rgba(255,255,255,.68)!important;
+}
+#bundle-list .card-2 *,#active-missions-list .card-2 *,#critical-needs-list .card-2 *,#resource-gaps .card-2 *,#volunteers-grid .card * ,#resources-grid .card * ,#all-needs-list .card * ,#sim-needs-list .card-2 *{color:#171300}
+#bundle-list .card-2 .text-\[var\(--text-faint\)],#active-missions-list .card-2 .text-\[var\(--text-faint\)],#critical-needs-list .card-2 .text-\[var\(--text-faint\)]{color:#6b5300!important}
+#bundle-list .badge,#active-missions-list .badge,#critical-needs-list .badge,#volunteers-grid .badge,#resources-grid .badge,#all-needs-list .badge,#sim-needs-list .badge{background:rgba(15,25,36,.13)!important;border-color:rgba(15,25,36,.18)!important;color:#2a2307!important}
+#bundle-list .score-ring .txt{color:#171300!important}
+
+/* Keep mission controls dark so they stay readable against yellow cards */
+#active-missions-list .btn-ghost,#critical-needs-list .btn-ghost,#bundle-list .btn-ghost{background:#0e1b2b!important;color:#fff!important;border-color:#405c76!important}
+#active-missions-list .btn-teal,#bundle-list .btn-teal{color:#04211b!important}
+
+/* Form area */
+#register-form{background:#081421!important;border:1px solid #35516c!important}
+input,textarea,select{background:#07131f!important;border:2px solid #2c4862!important;border-radius:11px!important;min-height:44px;padding:10px 12px}
+select{min-height:46px}
+
+/* Simulation */
+#tab-simulation>.card:first-child{background:linear-gradient(135deg,#121f31,#0c1828)!important;border:1px solid #3a556f!important}
+#tab-simulation .btn-primary,#tab-simulation .btn-teal{min-width:210px!important}
+#sim-progress-wrap .terminal{min-height:170px;background:#050d16;border-color:#294763}
+#impact-grid .card-2{background:linear-gradient(180deg,#ffe66d,#ffd21f)!important;border-color:rgba(255,255,255,.35)!important;color:#171300!important}
+#impact-grid .card-2 *{color:#171300!important}
+#impact-grid .card-2 [style*="var(--teal)"]{color:#254600!important}
+
+/* Map */
+#tab-map>.card{background:#0a1726!important;border-color:#2f4a65!important}
+#map{border:1px solid #385571;box-shadow:inset 0 0 30px rgba(0,0,0,.22)}
+
+/* Toasts / notifications */
+.toast{background:linear-gradient(180deg,#13283e,#0c1c2d)!important;border:1px solid #496580!important;border-radius:15px!important;color:#f6fbff!important;box-shadow:0 20px 45px rgba(0,0,0,.46)!important}
+
+/* Click ripple */
+.ui-ripple{position:absolute;border-radius:50%;transform:translate(-50%,-50%) scale(0);background:rgba(255,255,255,.42);pointer-events:none;animation:uiRipple .62s ease-out forwards;z-index:-1}
+@keyframes uiRipple{to{transform:translate(-50%,-50%) scale(3.8);opacity:0}}
+.btn-bounce{animation:btnBounce .46s cubic-bezier(.2,1.35,.35,1)}
+@keyframes btnBounce{0%{transform:scale(1)}25%{transform:scale(.93) rotate(-.8deg)}55%{transform:scale(1.06) rotate(.5deg)}78%{transform:scale(.985)}100%{transform:scale(1)}}
+.card-pop{animation:cardPop .42s cubic-bezier(.2,1.25,.35,1)}
+@keyframes cardPop{0%{transform:translateY(10px) scale(.985);opacity:.6}100%{transform:translateY(0) scale(1);opacity:1}}
+
+/* Make every major action visibly larger on desktop */
+.hero-actions button,.command-card button,#bundle-section button,#tab-simulation button{min-height:56px!important}
+@media (max-width:1100px){.hero-panel{position:relative;right:auto;top:auto;transform:none;width:auto;margin-top:22px}.hero-shell{min-height:0}}
+@media (max-width:720px){.header-inner{padding:11px 14px 0}.hero-shell{padding:24px 20px}.hero-title{font-size:33px!important}.hero-actions button{width:100%}.detect-grid{grid-template-columns:repeat(2,1fr)}.stat-card{min-height:96px}.topnav{padding-bottom:9px}.tab-btn{min-height:44px}.btn-primary,.btn-teal,.btn-ghost{min-height:52px!important;width:auto}}
+
+/* Aliases — referenced across the file (stat cards, coverage colour,
+   warnings, muted text) but never declared. Mapped onto the real
+   palette tokens so every var(--x) call above actually resolves. */
+:root{
+  --teal:var(--cyan);
+  --amber:var(--accent);
+  --coral:var(--red);
+  --text-dim:var(--muted);
+  --text-faint:var(--faint);
+}
+
+/* =========================================================
+   BADGE TIERS + LEADERBOARD + FELICITATION CERTIFICATE
+   ========================================================= */
+.badge-tier{display:inline-flex;align-items:center;gap:4px;font-weight:800;letter-spacing:.02em;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.badge-tier-gold{background:linear-gradient(135deg,rgba(255,210,77,.16),rgba(184,134,11,.10));color:#FFD24D;border-color:rgba(255,210,77,.35)}
+.badge-tier-silver{background:linear-gradient(135deg,rgba(227,233,242,.14),rgba(139,149,165,.10));color:#E3E9F2;border-color:rgba(227,233,242,.30)}
+.badge-tier-bronze{background:linear-gradient(135deg,rgba(230,169,107,.16),rgba(139,90,43,.10));color:#E6A96B;border-color:rgba(230,169,107,.32)}
+
+.leader-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:.15s}
+.leader-row:hover{border-color:var(--border2);transform:translateX(2px);background:var(--surface3)}
+.leader-rank{flex-shrink:0;width:30px;text-align:center;font-size:16px;font-weight:800}
+
+/* ---- certificate modal ---- */
+.cert-overlay{position:fixed;inset:0;z-index:100;background:rgba(3,8,15,.72);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.2s ease}
+.cert-overlay.open{opacity:1;pointer-events:auto}
+.cert-modal{position:relative;max-width:640px;width:100%;max-height:92vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:22px;box-shadow:0 40px 90px rgba(0,0,0,.5);
+  transform:scale(.96);transition:.2s ease}
+.cert-overlay.open .cert-modal{transform:scale(1)}
+.cert-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:10px;border:1px solid var(--border2);
+  background:var(--surface2);color:var(--muted);cursor:pointer;font-size:14px;z-index:2}
+.cert-close:hover{color:#fff;background:var(--surface3)}
+
+.cert-paper{background:radial-gradient(circle at 15% 0%,rgba(255,255,255,.05),transparent 40%),linear-gradient(180deg,#0c1727,#081120);
+  border-radius:14px;padding:6px}
+.cert-border{position:relative;border:2px solid var(--tier-color,#7fa8c9);border-radius:12px;padding:34px 30px;text-align:center;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(255,255,255,.06),transparent 55%),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.015) 0 2px,transparent 2px 14px);
+}
+.cert-border:before{content:"";position:absolute;inset:7px;border:1px solid color-mix(in srgb, var(--tier-color,#7fa8c9) 45%, transparent);border-radius:8px;pointer-events:none}
+.cert-seal{font-size:38px;margin-bottom:6px;filter:drop-shadow(0 0 14px var(--tier-color,#7fa8c9))}
+.cert-eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--tier-color,#7fa8c9);margin-bottom:10px}
+.cert-heading{font-family:"Space Grotesk";font-size:24px;font-weight:700;margin:0 0 14px;color:#fff}
+.cert-line{font-size:12px;color:var(--text-dim);margin:4px 0}
+.cert-name{font-family:"Space Grotesk";font-size:30px;font-weight:700;margin:6px 0;color:#fff;
+  border-bottom:1px solid var(--border2);display:inline-block;padding-bottom:8px;min-width:60%}
+.cert-body{font-size:12px;line-height:1.8;color:var(--text-dim);max-width:440px;margin:14px auto}
+.cert-tier{display:inline-block;margin-top:6px;padding:9px 22px;border-radius:999px;font-weight:800;font-size:14px;
+  color:#0d1420;background:var(--tier-color,#7fa8c9);box-shadow:0 8px 24px color-mix(in srgb, var(--tier-color,#7fa8c9) 40%, transparent)}
+.cert-footer{display:flex;align-items:flex-end;justify-content:space-between;margin-top:30px;gap:12px;text-align:left}
+.cert-sig{font-size:10.5px;color:var(--text-faint);line-height:1.5}
+.cert-sig-line{width:120px;border-top:1px solid var(--border2);margin-bottom:6px}
+.cert-meta{font-size:10px;color:var(--text-faint);text-align:right;line-height:1.6}
+
+@media print{
+  body *{visibility:hidden}
+  .cert-overlay, .cert-overlay *{visibility:visible}
+  .cert-overlay{position:fixed;inset:0;background:#fff;backdrop-filter:none;padding:0}
+  .cert-modal{box-shadow:none;border:none;max-width:100%;max-height:none;overflow:visible;background:#fff}
+  .no-print{display:none!important}
+}
+
+
+
+/* =========================================================
+   SEVA-NEXUS FINAL DATA-CARD PASS
+   Only affects content/data below the main navigation.
+   Navigation/header styles are intentionally untouched.
+   ========================================================= */
+:root{
+  --data-surface:#f1eee5;
+  --data-surface-2:#e7e2d6;
+  --data-ink:#102033;
+  --data-muted:#526174;
+  --data-gold:#d7a900;
+  --data-gold-hot:#ffd21f;
+  --data-border:rgba(255,210,31,.72);
+}
+
+/* Give generated data sections breathing room without changing top tabs. */
+#bundle-list,
+#active-missions-list,
+#critical-needs-list,
+#resource-gaps,
+#volunteers-grid,
+#resources-grid,
+#all-needs-list,
+#sim-needs-list,
+#impact-grid{
+  gap:16px !important;
+}
+
+#bundle-list > *,
+#active-missions-list > *,
+#critical-needs-list > *,
+#resource-gaps > *,
+#volunteers-grid > *,
+#resources-grid > *,
+#all-needs-list > *,
+#sim-needs-list > *,
+#impact-grid > *{
+  margin-bottom:2px;
+}
+
+/* Premium ivory data cards: calmer than bright yellow, but still highly visible. */
+#bundle-list .card-2,
+#active-missions-list .card-2,
+#critical-needs-list .card-2,
+#resource-gaps .card-2,
+#volunteers-grid .card,
+#resources-grid .card,
+#all-needs-list .card,
+#sim-needs-list .card-2,
+#impact-grid .card-2{
+  position:relative !important;
+  isolation:isolate;
+  overflow:hidden;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.96),rgba(241,238,229,.98) 58%,rgba(225,219,205,.98)) !important;
+  color:var(--data-ink) !important;
+  border:1px solid rgba(255,210,31,.78) !important;
+  border-radius:17px !important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.96) !important;
+  transform:translateZ(0);
+  transition:
+    transform .26s cubic-bezier(.2,1.35,.35,1),
+    box-shadow .26s ease,
+    border-color .2s ease,
+    background .2s ease !important;
+  will-change:transform;
+}
+
+/* Small gold rail = visual connection to SEVA-NEXUS branding. */
+#bundle-list .card-2::before,
+#active-missions-list .card-2::before,
+#critical-needs-list .card-2::before,
+#resource-gaps .card-2::before,
+#volunteers-grid .card::before,
+#resources-grid .card::before,
+#all-needs-list .card::before,
+#sim-needs-list .card-2::before,
+#impact-grid .card-2::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:5px;
+  background:linear-gradient(180deg,var(--data-gold-hot),var(--data-gold));
+  border-radius:17px 0 0 17px;
+  box-shadow:0 0 18px rgba(255,210,31,.24);
+  pointer-events:none;
+}
+
+/* Subtle top sheen. */
+#bundle-list .card-2::after,
+#active-missions-list .card-2::after,
+#critical-needs-list .card-2::after,
+#resource-gaps .card-2::after,
+#volunteers-grid .card::after,
+#resources-grid .card::after,
+#all-needs-list .card::after,
+#sim-needs-list .card-2::after,
+#impact-grid .card-2::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(115deg,rgba(255,255,255,.25),transparent 28%,transparent 72%,rgba(255,210,31,.07));
+  pointer-events:none;
+  z-index:-1;
+}
+
+/* Cursor hover: lifted, springy, premium — no effect on the navigation. */
+#bundle-list .card-2:hover,
+#active-missions-list .card-2:hover,
+#critical-needs-list .card-2:hover,
+#resource-gaps .card-2:hover,
+#volunteers-grid .card:hover,
+#resources-grid .card:hover,
+#all-needs-list .card:hover,
+#sim-needs-list .card-2:hover,
+#impact-grid .card-2:hover{
+  transform:translateY(-7px) scale(1.012) rotateX(1deg) !important;
+  border-color:#ffd21f !important;
+  box-shadow:
+    0 20px 42px rgba(0,0,0,.32),
+    0 8px 22px rgba(255,210,31,.13),
+    inset 0 1px 0 rgba(255,255,255,1) !important;
+}
+
+/* JS adds this class for a real spring when the pointer enters a data card. */
+.data-card-spring{
+  animation:dataCardSpring .48s cubic-bezier(.17,1.38,.32,1) both;
+}
+@keyframes dataCardSpring{
+  0%{transform:translateY(0) scale(1)}
+  28%{transform:translateY(-9px) scale(1.018) rotateX(1.5deg)}
+  58%{transform:translateY(-4px) scale(1.008)}
+  78%{transform:translateY(-7px) scale(1.012)}
+  100%{transform:translateY(-5px) scale(1.01)}
+}
+
+/* Keep text crisp against the light cards. */
+#bundle-list .card-2 *,
+#active-missions-list .card-2 *,
+#critical-needs-list .card-2 *,
+#resource-gaps .card-2 *,
+#volunteers-grid .card *,
+#resources-grid .card *,
+#all-needs-list .card *,
+#sim-needs-list .card-2 *,
+#impact-grid .card-2 *{
+  color:var(--data-ink);
+}
+
+#bundle-list .card-2 .text-\[var\(--text-faint\)],
+#active-missions-list .card-2 .text-\[var\(--text-faint\)],
+#critical-needs-list .card-2 .text-\[var\(--text-faint\)]{
+  color:var(--data-muted) !important;
+}
+
+/* Status badges remain colorful so information can be scanned quickly. */
+#bundle-list .badge,
+#active-missions-list .badge,
+#critical-needs-list .badge,
+#volunteers-grid .badge,
+#resources-grid .badge,
+#all-needs-list .badge,
+#sim-needs-list .badge{
+  background:#16263a !important;
+  color:#f8fbff !important;
+  border:1px solid rgba(16,32,51,.22) !important;
+  box-shadow:0 3px 8px rgba(0,0,0,.12);
+}
+
+/* Mission/resource controls stay dark and readable on the new light surface. */
+#active-missions-list .btn-ghost,
+#critical-needs-list .btn-ghost,
+#bundle-list .btn-ghost{
+  background:linear-gradient(180deg,#172b40,#0d1c2c) !important;
+  color:#fff !important;
+  border-color:#405c76 !important;
+}
+
+/* More visual separation between stacked list items. */
+#bundle-list > .card-2,
+#active-missions-list > .card-2,
+#critical-needs-list > .card-2,
+#resource-gaps > .card-2,
+#volunteers-grid > .card,
+#resources-grid > .card,
+#all-needs-list > .card,
+#sim-needs-list > .card-2{
+  margin-bottom:6px !important;
+}
+
+@media(max-width:720px){
+  #bundle-list,
+  #active-missions-list,
+  #critical-needs-list,
+  #resource-gaps,
+  #volunteers-grid,
+  #resources-grid,
+  #all-needs-list,
+  #sim-needs-list,
+  #impact-grid{gap:12px !important}
+}
+
+/* ================================================================
+   SEVA-NEXUS — COLLAPSIBLE COMMAND HEADER
+   Keeps every existing feature/navigation intact.
+   The header can collapse to a thin bar to maximize map/data viewport.
+   ================================================================ */
+.header-collapse-toggle{
+  position:absolute!important;
+  top:10px!important;
+  right:28px!important;
+  z-index:60!important;
+  width:38px!important;
+  min-width:38px!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:9px!important;
+  font-size:18px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  font-family:Inter,system-ui,sans-serif!important;
+  cursor:pointer!important;
+  transition:transform .25s ease, background .2s ease, border-color .2s ease!important;
+}
+.header-collapse-toggle:hover{transform:translateY(-1px) scale(1.04)!important}
+.header-collapse-toggle .collapse-arrow{
+  display:block;
+  transform:translateY(-1px);
+  transition:transform .28s ease;
+}
+.app-header{
+  transition:max-height .32s ease, box-shadow .32s ease, background .32s ease!important;
+  overflow:hidden;
+}
+.app-header.header-collapsed{
+  max-height:52px!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.34)!important;
+}
+.app-header.header-collapsed .header-inner{
+  height:52px!important;
+  padding:7px 28px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+}
+.app-header.header-collapsed .header-inner > .flex.items-center.justify-between{
+  visibility:hidden;
+  height:0!important;
+  overflow:hidden!important;
+  margin:0!important;
+}
+.app-header.header-collapsed .topnav{
+  display:none!important;
+}
+.app-header.header-collapsed .header-collapse-toggle{
+  top:9px!important;
+}
+.app-header.header-collapsed .header-collapse-toggle .collapse-arrow{
+  transform:translateY(1px) rotate(180deg);
+}
+.header-mini-label{
+  display:none;
+  font:800 11px "Space Grotesk",Inter,sans-serif;
+  letter-spacing:.10em;
+  color:#8195aa;
+  text-transform:uppercase;
+  user-select:none;
+}
+.app-header.header-collapsed .header-mini-label{
+  display:block;
+}
+
+@media(max-width:720px){
+  .header-collapse-toggle{
+    right:14px!important;
+    top:7px!important;
+    width:36px!important;
+    min-width:36px!important;
+    height:32px!important;
+    min-height:32px!important;
+  }
+  .app-header.header-collapsed{
+    max-height:48px!important;
+  }
+  .app-header.header-collapsed .header-inner{
+    height:48px!important;
+    padding:6px 14px!important;
+  }
+  .app-header.header-collapsed .header-collapse-toggle{
+    top:7px!important;
+  }
+}
+
+</style>
+</head>
+<body class="bg-grid">
+
+<!-- ============ HEADER ============ -->
+<header class="app-header" id="app-header">
+  <button
+    id="header-collapse-toggle"
+    class="btn-ghost header-collapse-toggle"
+    type="button"
+    onclick="toggleHeaderCollapse()"
+    aria-label="Minimize command header"
+    aria-expanded="true"
+    title="Minimize header"
+  ><span class="collapse-arrow">^</span></button>
+  <div class="header-inner">
+    <span class="header-mini-label">SEVA-NEXUS · Command Center</span>
+    <div class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="brand-mark">S</div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-[17px] font-bold tracking-tight">SEVA-NEXUS</h1>
+            <span class="badge badge-critical mono live-pill">LIVE PROTOTYPE</span>
+          </div>
+          <div class="brand-sub">INTELLIGENT VOLUNTEER & RESOURCE COORDINATION · LUCKNOW</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <div id="clock" class="mono text-[11px] text-[var(--muted)] hidden md:block"></div>
+        <div class="role-switch flex items-center gap-1">
+          <button onclick="setRole('coordinator')" id="role-coordinator" class="role-btn tab-btn active !py-1.5">Coordinator</button>
+          <button onclick="setRole('volunteer')" id="role-volunteer" class="role-btn tab-btn !py-1.5">Volunteer</button>
+          <button onclick="setRole('ngo')" id="role-ngo" class="role-btn tab-btn !py-1.5 hidden sm:block">Resource Provider</button>
+        </div>
+      </div>
+    </div>
+    <nav class="topnav">
+      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="tab-dot inline-block w-1.5 h-1.5 rounded-full mr-1.5"></span>Response Center</button>
+      <button class="tab-btn" data-tab="simulation" onclick="switchTab('simulation')"><span class="tab-dot inline-block w-1.5 h-1.5 rounded-full mr-1.5"></span>Flood Simulation</button>
+      <button class="tab-btn" data-tab="map" onclick="switchTab('map')"><span class="tab-dot inline-block w-1.5 h-1.5 rounded-full mr-1.5"></span>Live Map</button>
+      <button class="tab-btn" data-tab="volunteers" onclick="switchTab('volunteers')"><span class="tab-dot inline-block w-1.5 h-1.5 rounded-full mr-1.5"></span>Volunteers</button>
+      <button class="tab-btn" data-tab="resources" onclick="switchTab('resources')"><span class="tab-dot inline-block w-1.5 h-1.5 rounded-full mr-1.5"></span>Resource Inventory</button>
+      <button class="tab-btn" data-tab="needs" onclick="switchTab('needs')"><span class="tab-dot inline-block w-1.5 h-1.5 rounded-full mr-1.5"></span>All Needs</button>
+      <button class="tab-btn" data-tab="leaderboard" onclick="switchTab('leaderboard')"><span class="tab-dot inline-block w-1.5 h-1.5 rounded-full mr-1.5"></span>🏆 Leaderboard</button>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-[1500px] mx-auto px-5 py-6">
+
+<!-- ============ DASHBOARD TAB ============ -->
+<section id="tab-dashboard" class="tab-panel active">
+  <div class="hero-shell">
+    <div class="hero-content">
+      <div class="eyebrow">Emergency Resource Coordination</div>
+      <h2 class="hero-title">From <span>need</span> to mission,<br>without the coordination chaos.</h2>
+      <p class="hero-copy">SEVA-NEXUS converts incoming emergency reports into structured missions, then intelligently bundles verified volunteers, vehicles and supplies around the need.</p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="document.getElementById('ai-input').focus();document.getElementById('ai-input').scrollIntoView({behavior:'smooth',block:'center'})">⚡ Create Emergency Need</button>
+        <button class="btn-ghost" onclick="switchTab('simulation')">Run Response Simulation →</button>
+      </div>
+      <div class="hero-meta">
+        <div class="hero-stat"><strong>18+</strong><small>Verified Volunteers</small></div>
+        <div class="hero-stat"><strong>27</strong><small>Tracked Resources</small></div>
+        <div class="hero-stat"><strong>&lt; 40s</strong><small>Target Assignment</small></div>
+        <div class="hero-stat"><strong>5</strong><small>Response Zones</small></div>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <div class="flex items-center justify-between mb-1"><span class="eyebrow" style="font-size:8px">LIVE RESPONSE SNAPSHOT</span><span class="badge badge-ver">● OPERATIONAL</span></div>
+      <div class="mini-row"><span class="mini-label">Open needs</span><span class="mini-value" id="hero-open-needs">—</span></div>
+      <div class="mini-row"><span class="mini-label">Available responders</span><span class="mini-value" id="hero-available-vol">—</span></div>
+      <div class="mini-row"><span class="mini-label">Active missions</span><span class="mini-value" id="hero-active-missions">—</span></div>
+      <div class="mini-row"><span class="mini-label">Coordination status</span><span class="mini-value signal">READY FOR ASSIGNMENT</span></div>
+    </div>
+  </div>
+
+  <div id="stat-strip" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5"></div>
+
+  <div class="quick-bar mb-5">
+    <span class="label">Command Center</span>
+    <button class="btn-ghost !min-h-[34px] !py-1.5 !px-3 text-[11px]" onclick="document.getElementById('ai-input').focus()">AI Need Parser</button>
+    <button class="btn-ghost !min-h-[34px] !py-1.5 !px-3 text-[11px]" onclick="switchTab('map')">Open Resource Map</button>
+    <button class="btn-ghost !min-h-[34px] !py-1.5 !px-3 text-[11px]" onclick="switchTab('needs')">Review All Needs</button>
+    <span class="ml-auto text-[10px] text-[var(--faint)] hidden md:block">Human confirmation required before assignment</span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+    <div class="lg:col-span-3 space-y-5">
+      <div class="card command-card">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">01 · Intake</div>
+            <h2 class="section-title mt-1">AI Need → Structured Mission</h2>
+            <p class="section-sub">Describe the situation naturally. SEVA-NEXUS extracts location, urgency, people and resource requirements for coordinator confirmation.</p>
+          </div>
+          <span class="ai-chip shrink-0">AI-ASSIST · HUMAN CONFIRMS</span>
+        </div>
+        <textarea id="ai-input" rows="4" class="command-input w-full rounded-xl" placeholder="Example: 30 people stranded in Aliganj due to flooding. We need four volunteers, one vehicle and 300 water bottles within two hours."></textarea>
+        <div class="flex items-center gap-2 mt-3 flex-wrap">
+          <button class="btn-primary" onclick="runAIParse()">⚡ Parse Emergency Need</button>
+          <button class="btn-ghost" onclick="fillSampleNeed()">Use sample scenario</button>
+          <div id="ai-loading" class="hidden text-[10px] text-[var(--muted)] mono">analyzing<span class="caret"></span></div>
+        </div>
+        <div id="ai-terminal-wrap" class="mt-4 hidden"><div class="terminal" id="ai-terminal"></div></div>
+        <div id="ai-confirm-card" class="mt-4 hidden fade-in">
+          <div class="detect-card">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div><div class="section-kicker" style="color:var(--accent2)">AI DETECTED MISSION</div><h3 id="ai-mission-title" class="text-[17px] font-bold mt-1">—</h3></div>
+              <span id="ai-priority-badge" class="badge badge-critical">CRITICAL</span>
+            </div>
+            <div id="ai-mission-grid" class="detect-grid mb-3"></div>
+            <div class="flex gap-2 flex-wrap">
+              <button class="btn-primary" onclick="confirmAndFind()">✓ Confirm & Find Resources</button>
+              <button class="btn-ghost" onclick="dismissAICard()">Discard</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="bundle-section" class="card bundle-card p-5 hidden">
+        <div class="section-head">
+          <div><div class="section-kicker">02 · Orchestration</div><h2 class="section-title mt-1">Recommended Resource Bundle</h2><p class="section-sub">The engine combines people, vehicles and supplies into one executable mission.</p></div>
+          <div id="bundle-coverage" class="badge badge-ver mono"></div>
+        </div>
+        <div class="bundle-summary">
+          <div class="bundle-stat"><strong id="bundle-people-count">—</strong><span>People</span></div>
+          <div class="bundle-stat"><strong id="bundle-vehicle-count">—</strong><span>Vehicles</span></div>
+          <div class="bundle-stat"><strong id="bundle-supply-count">—</strong><span>Supply Items</span></div>
+        </div>
+        <div id="bundle-list" class="space-y-2.5"></div>
+        <div class="flex gap-2 mt-4 flex-wrap"><button id="assign-mission-btn" class="btn-teal" onclick="assignCurrentMission()">✓ Assign Mission</button><button class="btn-ghost" onclick="hideBundleSection()">Cancel</button></div>
+      </div>
+
+      <div class="card p-5">
+        <div class="section-head"><div><div class="section-kicker">03 · Priority Queue</div><h2 class="section-title mt-1">Critical & Open Needs</h2><p class="section-sub">Highest-priority requests waiting for a resource bundle.</p></div><span class="badge badge-critical">LIVE QUEUE</span></div>
+        <div id="critical-needs-list" class="space-y-2.5 scrollbox"></div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-2 space-y-5">
+      <div class="card p-5">
+        <div class="section-head"><div><div class="section-kicker">04 · Execution</div><h2 class="section-title mt-1">Active Missions</h2><p class="section-sub">Track assignments and trigger dynamic reassignment when needed.</p></div><span class="badge badge-medium">LIVE</span></div>
+        <div id="active-missions-list" class="space-y-3 scrollbox"></div>
+      </div>
+      <div class="card p-5">
+        <div class="section-head"><div><div class="section-kicker">05 · Capacity</div><h2 class="section-title mt-1">Resource Availability</h2></div></div>
+        <div id="resource-avail" class="space-y-3"></div>
+      </div>
+      <div class="card p-5">
+        <div class="section-head"><div><div class="section-kicker">06 · Coverage</div><h2 class="section-title mt-1">Zone Resource Gaps</h2><p class="section-sub">A quick view of demand pressure by response zone.</p></div></div>
+        <div id="resource-gaps" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SIMULATION TAB ============ -->
+<section id="tab-simulation" class="tab-panel">
+  <div class="card p-6 mb-5">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="badge badge-critical mono mb-2">SIMULATION MODE — DEMO DATA ONLY</div>
+        <h2 class="text-[20px] font-bold mb-1">Flood Response Simulation</h2>
+        <p class="text-[13px] text-[var(--text-dim)] max-w-xl">Loads a realistic multi-zone flood scenario across Lucknow, then lets the matching engine assign every open need in one pass.</p>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        <button class="btn-primary px-5 py-3 text-[13.5px]" onclick="startSimulation()">▶ START FLOOD SIMULATION</button>
+        <button id="auto-assign-btn" class="btn-teal px-5 py-3 text-[13.5px] hidden" onclick="autoAssignAll()">⚡ AUTO-ASSIGN ALL</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sim-stats" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 hidden"></div>
+
+  <div id="sim-progress-wrap" class="card p-5 mb-5 hidden">
+    <h3 class="text-[13px] font-bold mb-2 mono text-[var(--text-dim)]">MATCHING ENGINE LOG</h3>
+    <div class="terminal" id="sim-log"></div>
+  </div>
+
+  <div id="sim-needs-wrap" class="card p-5 mb-5 hidden">
+    <h2 class="text-[15px] font-bold mb-3">Simulation Needs</h2>
+    <div id="sim-needs-list" class="grid grid-cols-1 md:grid-cols-2 gap-2.5"></div>
+  </div>
+
+  <div id="impact-wrap" class="hidden">
+    <div class="card p-6">
+      <h2 class="text-[15px] font-bold mb-1">📈 Response Performance</h2>
+      <p class="text-[12px] text-[var(--text-faint)] mb-4">Simulation / demo metrics — illustrative of coordination speed, not a real-world claim.</p>
+      <div id="impact-grid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAP TAB ============ -->
+<section id="tab-map" class="tab-panel">
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-[15px] font-bold">📍 Live Resource &amp; Need Map — Lucknow</h2>
+      <div class="flex items-center gap-3 text-[11px] mono flex-wrap">
+        <span class="flex items-center gap-1"><span class="status-dot" style="background:#2BD9B9"></span>Volunteers</span>
+        <span class="flex items-center gap-1"><span class="status-dot" style="background:#4EA1FF"></span>Vehicles</span>
+        <span class="flex items-center gap-1"><span class="status-dot" style="background:#F5A623"></span>Equipment/Supplies</span>
+        <span class="flex items-center gap-1"><span class="status-dot" style="background:#FF6B4A"></span>Needs</span>
+        <span class="flex items-center gap-1"><span class="status-dot" style="background:#9B8CFF"></span>NGOs</span>
+      </div>
+    </div>
+    <div style="height:560px;">
+      <div id="map"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VOLUNTEERS TAB ============ -->
+<section id="tab-volunteers" class="tab-panel">
+  <div class="card p-5 mb-4">
+    <div class="flex flex-wrap items-center gap-2 justify-between">
+      <h2 class="text-[15px] font-bold">👤 Volunteer Directory <span class="text-[var(--text-faint)] font-normal">(Volunteer role view)</span></h2>
+      <div class="flex gap-2">
+        <select id="vol-filter-status" onchange="renderVolunteersTab()" class="card-2 rounded-lg px-2.5 py-1.5 text-[12px]">
+          <option value="">All statuses</option>
+          <option>Available</option><option>Assigned</option><option>In Mission</option><option>Unavailable</option>
+        </select>
+        <select id="vol-filter-skill" onchange="renderVolunteersTab()" class="card-2 rounded-lg px-2.5 py-1.5 text-[12px]">
+          <option value="">All skills</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="volunteers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+</section>
+
+<!-- ============ RESOURCES TAB ============ -->
+<section id="tab-resources" class="tab-panel">
+  <div class="card p-5 mb-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-[15px] font-bold">🚚 Resource Inventory <span class="text-[var(--text-faint)] font-normal">(NGO / Resource Provider role view)</span></h2>
+      <button class="btn-primary px-3.5 py-2 text-[12.5px]" onclick="toggleRegisterForm()">+ Register Resource</button>
+    </div>
+    <div id="register-form" class="hidden mt-4 card-2 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+      <input id="reg-name" placeholder="Resource name" class="card rounded-lg px-2.5 py-2 text-[12.5px] col-span-1">
+      <select id="reg-type" class="card rounded-lg px-2.5 py-2 text-[12.5px]">
+        <option value="Vehicle">Vehicle</option>
+        <option value="Equipment">Equipment</option>
+        <option value="Supply">Supply</option>
+      </select>
+      <input id="reg-qty" type="number" placeholder="Quantity / capacity" class="card rounded-lg px-2.5 py-2 text-[12.5px]">
+      <select id="reg-zone" class="card rounded-lg px-2.5 py-2 text-[12.5px]"></select>
+      <button class="btn-teal rounded-lg px-3 py-2 text-[12.5px]" onclick="submitResource()">Add to inventory</button>
+    </div>
+  </div>
+
+  <div class="flex gap-2 mb-4">
+    <button class="tab-btn active" data-rtab="Vehicle" onclick="setResTab('Vehicle')">Vehicles</button>
+    <button class="tab-btn" data-rtab="Equipment" onclick="setResTab('Equipment')">Equipment</button>
+    <button class="tab-btn" data-rtab="Supply" onclick="setResTab('Supply')">Supplies</button>
+  </div>
+  <div id="resources-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+</section>
+
+<!-- ============ NEEDS TAB ============ -->
+<section id="tab-needs" class="tab-panel">
+  <div class="card p-5 mb-4">
+    <h2 class="text-[15px] font-bold">📋 All Needs / Emergency Requests</h2>
+    <p class="text-[12.5px] text-[var(--text-dim)]">Full lifecycle view — OPEN → MATCHING → ASSIGNED → DEPLOYED → IN PROGRESS → COMPLETED</p>
+  </div>
+  <div id="all-needs-list" class="space-y-3"></div>
+</section>
+
+<section id="tab-leaderboard" class="tab-panel">
+  <div class="card p-5 mb-4">
+    <h2 class="text-[15px] font-bold">🏆 Recognition &amp; Felicitation</h2>
+    <p class="text-[12.5px] text-[var(--text-dim)]">Volunteers and NGOs earn 🥉 Bronze → 🥈 Silver → 🥇 Gold badges as they complete missions. Top performers can generate a shareable felicitation certificate.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card p-4">
+      <h3 class="text-[13.5px] font-bold mb-3 flex items-center gap-2">👤 Top Volunteers <span class="text-[10.5px] font-normal text-[var(--text-faint)]">by missions completed</span></h3>
+      <div id="leaderboard-volunteers" class="space-y-2"></div>
+    </div>
+    <div class="card p-4">
+      <h3 class="text-[13.5px] font-bold mb-3 flex items-center gap-2">🏢 Top NGOs / Resource Providers <span class="text-[10.5px] font-normal text-[var(--text-faint)]">by resource contributions</span></h3>
+      <div id="leaderboard-ngos" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <div class="card p-4 mt-4">
+    <h3 class="text-[13.5px] font-bold mb-2">🎖️ Badge Tiers</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="leaderboard-list">
+      <div class="card-2 p-3 rounded-xl flex items-center gap-3"><span class="text-[22px]">🥉</span><div><div class="font-semibold text-[12.5px]" style="color:#E6A96B">Bronze Responder</div><div class="text-[10.5px] text-[var(--text-faint)]">3+ missions completed</div></div></div>
+      <div class="card-2 p-3 rounded-xl flex items-center gap-3"><span class="text-[22px]">🥈</span><div><div class="font-semibold text-[12.5px]" style="color:#E3E9F2">Silver Responder</div><div class="text-[10.5px] text-[var(--text-faint)]">6+ missions completed</div></div></div>
+      <div class="card-2 p-3 rounded-xl flex items-center gap-3"><span class="text-[22px]">🥇</span><div><div class="font-semibold text-[12.5px]" style="color:#FFD24D">Gold Responder</div><div class="text-[10.5px] text-[var(--text-faint)]">10+ missions completed</div></div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FELICITATION CERTIFICATE MODAL ============ -->
+<div id="certificate-overlay" class="cert-overlay">
+  <div class="cert-modal">
+    <button class="cert-close" onclick="closeCertificate()">✕</button>
+    <div id="certificate-content"></div>
+    <div class="flex items-center justify-center gap-3 mt-4 no-print">
+      <button class="btn-primary px-4 py-2 text-[12.5px]" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      <button class="btn-ghost px-4 py-2 text-[12.5px]" onclick="closeCertificate()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 w-[320px]"></div>
+
+<script>
+/* =========================================================================
+   SEVA-NEXUS PROTOTYPE — single-file demo
+   All data below is mock/demo data preloaded for a Smart India Hackathon
+   presentation. No backend — everything runs in-browser.
+   ========================================================================= */
+
+/* ---------- ZONES (Lucknow) ---------- */
+const ZONES = [
+  {name:'Aliganj',    lat:26.8931, lng:80.9462},
+  {name:'Gomti Nagar',lat:26.8467, lng:81.0140},
+  {name:'Hazratganj', lat:26.8500, lng:80.9462},
+  {name:'Chinhat',    lat:26.8926, lng:81.0245},
+  {name:'Alambagh',   lat:26.8206, lng:80.9089},
+];
+function jitter(lat,lng){ return {lat: lat + (Math.random()-0.5)*0.018, lng: lng + (Math.random()-0.5)*0.018}; }
+function zoneByName(n){ return ZONES.find(z=>z.name===n) || ZONES[0]; }
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function uid(prefix){ return prefix + Math.floor(1000+Math.random()*9000); }
+
+/* ---------- DEMO DATA ---------- */
+const SKILLS = ['First Aid','Driving','Swimming','Crowd Management','Logistics','Medical Support','Communication','Rescue Support'];
+const FIRST_NAMES = ['Rahul','Priya','Amit','Sneha','Vikram','Anjali','Rohit','Kavita','Suresh','Neha','Arjun','Pooja','Manoj','Divya','Karan','Ritu','Sanjay','Meera','Vikas','Shalini'];
+const LAST_NAMES = ['Sharma','Verma','Gupta','Singh','Yadav','Mishra','Tiwari','Agarwal','Khan','Pandey'];
+const NGOS = ['Lucknow Relief Trust','Sewa Bharti UP','Red Cross — Lucknow Chapter','Uday Foundation','Gomti Seva Sangh','Nirmal Sewa NGO'];
+/* Tracks how many completed missions each NGO has contributed resources to — powers the NGO leaderboard. */
+let ngoMissionCount = {};
+NGOS.forEach(n => ngoMissionCount[n] = Math.floor(Math.random()*7)); // demo seed so the leaderboard isn't empty on load
+
+let volunteers = [];
+let vehicles = [];
+let resourcesList = []; // equipment + supplies
+let needs = [];
+let missions = [];
+let ngoAssignCount = 0;
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function pickN(arr,n){ const c=[...arr]; const out=[]; while(out.length<n && c.length){ out.push(c.splice(Math.floor(Math.random()*c.length),1)[0]); } return out; }
+
+function genVolunteers(){
+  const statuses = ['Available','Available','Available','Assigned','Unavailable'];
+  for(let i=1;i<=18;i++){
+    const zone = pick(ZONES);
+    const pos = jitter(zone.lat, zone.lng);
+    volunteers.push({
+      id: 'V'+String(i).padStart(3,'0'),
+      name: pick(FIRST_NAMES)+' '+pick(LAST_NAMES),
+      skills: pickN(SKILLS, 1+Math.floor(Math.random()*3)),
+      zone: zone.name, lat: pos.lat, lng: pos.lng,
+      status: pick(statuses),
+      availableUntil: ['6:00 PM','8:00 PM','10:00 AM','Open-ended'][Math.floor(Math.random()*4)],
+      workload: Math.floor(Math.random()*3),
+      verified: Math.random() > 0.22,
+      completedMissions: Math.floor(Math.random()*9)
+    });
+  }
+}
+
+function genVehicles(){
+  const types = [
+    {type:'Ambulance', cap:2}, {type:'Rescue Van', cap:8}, {type:'Boat', cap:6},
+    {type:'Pickup Truck', cap:4}, {type:'Water Tanker', cap:1}, {type:'Mini Bus', cap:15}
+  ];
+  for(let i=1;i<=9;i++){
+    const zone = pick(ZONES); const pos = jitter(zone.lat, zone.lng);
+    const t = pick(types);
+    vehicles.push({
+      id:'VH'+String(i).padStart(2,'0'), name:t.type+' #'+i, type:t.type, capacity:t.cap,
+      owner: pick(NGOS), zone: zone.name, lat:pos.lat, lng:pos.lng,
+      status: Math.random()>0.3 ? 'Available' : 'Assigned',
+      verified: Math.random()>0.15
+    });
+  }
+}
+
+function genResources(){
+  const items = [
+    {name:'Water', type:'Supply', unit:'units', qtyMax:600},
+    {name:'Food Packets', type:'Supply', unit:'units', qtyMax:400},
+    {name:'Blankets', type:'Supply', unit:'units', qtyMax:250},
+    {name:'First Aid Kit', type:'Equipment', unit:'kits', qtyMax:40},
+    {name:'Generator', type:'Equipment', unit:'units', qtyMax:12},
+    {name:'Rescue Rope Kit', type:'Equipment', unit:'sets', qtyMax:20},
+    {name:'Communication Radio Set', type:'Equipment', unit:'sets', qtyMax:25},
+    {name:'Life Jackets', type:'Equipment', unit:'units', qtyMax:80},
+    {name:'Tents', type:'Equipment', unit:'units', qtyMax:30},
+  ];
+  let idc=1;
+  items.forEach(it=>{
+    // create 2 stock entries per item spread across zones
+    for(let k=0;k<2;k++){
+      const zone = pick(ZONES); const pos = jitter(zone.lat, zone.lng);
+      resourcesList.push({
+        id:'RS'+String(idc++).padStart(2,'0'),
+        name: it.name, type: it.type, unit: it.unit,
+        quantity: Math.floor(it.qtyMax*(0.3+Math.random()*0.7)),
+        owner: pick(NGOS), zone: zone.name, lat:pos.lat, lng:pos.lng,
+        status: Math.random()>0.25 ? 'Available' : 'Assigned',
+        verified: Math.random()>0.2
+      });
+    }
+  });
+}
+
+const NEED_TEMPLATES = [
+  {title:'Flood Evacuation & Relief', zone:'Aliganj', desc:'Families stranded on rooftops due to rising water levels; need evacuation support and drinking water.', priority:'Critical', affected:30, skills:['Swimming','Rescue Support','First Aid'], vol:4, veh:1, supplies:{Water:300}},
+  {title:'Medical Emergency Response', zone:'Gomti Nagar', desc:'Elderly residents in a flooded colony require urgent medical attention.', priority:'Critical', affected:12, skills:['Medical Support','First Aid'], vol:3, veh:1, supplies:{'First Aid Kit':5}},
+  {title:'Shelter & Blanket Distribution', zone:'Chinhat', desc:'Displaced families at a relief camp need blankets and tents for the night.', priority:'High', affected:60, skills:['Logistics','Crowd Management'], vol:3, veh:1, supplies:{Blankets:100,Tents:10}},
+  {title:'Stranded Commuters Rescue', zone:'Hazratganj', desc:'Commuters trapped near waterlogged underpass, water still rising.', priority:'Critical', affected:18, skills:['Rescue Support','Driving'], vol:3, veh:1, supplies:{}},
+  {title:'Food Supply Drop', zone:'Alambagh', desc:'Relief camp running low on food supplies for displaced residents.', priority:'Medium', affected:80, skills:['Logistics'], vol:2, veh:1, supplies:{'Food Packets':150}},
+  {title:'Power Outage — Generator Needed', zone:'Aliganj', desc:'Community health center lost power; needs backup generator urgently.', priority:'High', affected:0, skills:['Logistics'], vol:1, veh:1, supplies:{Generator:1}},
+  {title:'Communication Blackout Zone', zone:'Chinhat', desc:'Cut-off zone with no network; needs radio sets deployed for coordination.', priority:'High', affected:0, skills:['Communication'], vol:2, veh:0, supplies:{'Communication Radio Set':4}},
+  {title:'Elderly Care Evacuation', zone:'Gomti Nagar', desc:'Old-age home surrounded by floodwater, requires careful evacuation.', priority:'Critical', affected:22, skills:['Medical Support','Crowd Management','Rescue Support'], vol:5, veh:1, supplies:{}},
+  {title:'Water Purification Support', zone:'Hazratganj', desc:'Contaminated water supply reported; residents need clean drinking water.', priority:'Medium', affected:150, skills:['Logistics'], vol:2, veh:1, supplies:{Water:400}},
+  {title:'Rescue Boat Deployment', zone:'Alambagh', desc:'Low-lying colony fully cut off, boats required for supply and rescue runs.', priority:'Critical', affected:45, skills:['Swimming','Rescue Support'], vol:4, veh:1, supplies:{}},
+];
+
+function genNeeds(){
+  NEED_TEMPLATES.forEach((t,i)=>{
+    const zone = zoneByName(t.zone); const pos = jitter(zone.lat, zone.lng);
+    needs.push({
+      id:'N'+String(i+1).padStart(3,'0'),
+      title:t.title, description:t.desc, zone:t.zone, lat:pos.lat, lng:pos.lng,
+      priority:t.priority, affected:t.affected,
+      requiredSkills:t.skills, requiredVolunteers:t.vol, requiredVehicles:t.veh, requiredSupplies:t.supplies,
+      deadlineHours: t.priority==='Critical'? 2 : t.priority==='High'? 6 : 24,
+      status: i < 3 ? 'OPEN' : (i%4===0? 'ASSIGNED' : 'OPEN'),
+      createdAt: Date.now() - Math.floor(Math.random()*4)*3600*1000
+    });
+  });
+}
+
+genVolunteers(); genVehicles(); genResources(); genNeeds();
+
+/* ---------- CLOCK ---------- */
+function tickClock(){
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' IST';
+}
+setInterval(tickClock,1000); tickClock();
+
+/* ---------- COLLAPSIBLE COMMAND HEADER ---------- */
+function toggleHeaderCollapse(){
+  const header = document.getElementById('app-header');
+  const toggle = document.getElementById('header-collapse-toggle');
+  if(!header || !toggle) return;
+
+  const collapsed = header.classList.toggle('header-collapsed');
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  toggle.setAttribute('aria-label', collapsed ? 'Expand command header' : 'Minimize command header');
+  toggle.setAttribute('title', collapsed ? 'Expand header' : 'Minimize header');
+
+  const arrow = toggle.querySelector('.collapse-arrow');
+  if(arrow) arrow.textContent = collapsed ? '⌄' : '^';
+
+  // Leaflet needs a size refresh after the header animation changes the viewport.
+  if(mapInstance){
+    setTimeout(()=>{
+      mapInstance.invalidateSize({animate:false});
+    }, 340);
+  }
+}
+
+/* ---------- TABS / ROLES ---------- */
+function switchTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('nav .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`nav .tab-btn[data-tab="${name}"]`).classList.add('active');
+  if(name==='map') setTimeout(initMapIfNeeded, 60);
+  if(name==='volunteers') renderVolunteersTab();
+  if(name==='resources') renderResourcesTab();
+  if(name==='needs') renderAllNeedsTab();
+  if(name==='leaderboard') renderLeaderboardTab();
+}
+function setRole(r){
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('role-'+r).classList.add('active');
+  if(r==='coordinator') switchTab('dashboard');
+  if(r==='volunteer') switchTab('volunteers');
+  if(r==='ngo') switchTab('resources');
+}
+
+/* ---------- TOAST ---------- */
+function showToast(msg, type='info'){
+  const colors = {info:'var(--blue)', warn:'var(--amber)', success:'var(--teal)', critical:'var(--coral)'};
+  const el = document.createElement('div');
+  el.className = 'toast fade-in px-4 py-3 text-[12.5px]';
+  el.style.borderLeft = `3px solid ${colors[type]||colors.info}`;
+  el.innerHTML = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, 4200);
+}
+
+/* ---------- STAT STRIP ---------- */
+function statCard(label, value, accent){
+  return `<div class="card-2 rounded-xl px-4 py-3">
+    <div class="text-[10.5px] font-semibold tracking-wide text-[var(--text-faint)] uppercase mb-1">${label}</div>
+    <div class="text-[22px] font-bold display" style="color:${accent||'var(--text)'}">${value}</div>
+  </div>`;
+}
+function renderStatStrip(){
+  const activeIncidents = needs.filter(n=>n.status!=='COMPLETED').length;
+  const openNeeds = needs.filter(n=>n.status==='OPEN').length;
+  const availVol = volunteers.filter(v=>v.status==='Available').length;
+  const availVeh = vehicles.filter(v=>v.status==='Available').length;
+  const availEq = resourcesList.filter(r=>r.status==='Available').length;
+  const unassigned = needs.filter(n=>n.status==='OPEN').length;
+  document.getElementById('stat-strip').innerHTML = [
+    statCard('Active Incidents', activeIncidents, 'var(--coral)'),
+    statCard('Open Needs', openNeeds, 'var(--amber)'),
+    statCard('Available Volunteers', availVol, 'var(--teal)'),
+    statCard('Available Vehicles', availVeh, 'var(--blue)'),
+    statCard('Available Equipment', availEq, 'var(--violet)'),
+    statCard('Unassigned Needs', unassigned, 'var(--coral)'),
+  ].join('');
+}
+
+/* ---------- BADGES / SMALL RENDER HELPERS ---------- */
+function priorityBadge(p){
+  const cls = {Critical:'badge-critical',High:'badge-high',Medium:'badge-medium',Low:'badge-low'}[p]||'badge-medium';
+  return `<span class="badge ${cls}">${p.toUpperCase()}</span>`;
+}
+function verBadge(v){
+  return v ? `<span class="badge badge-ver">✓ Verified</span>` : `<span class="badge badge-unver">⚠ Unverified</span>`;
+}
+function statusColor(s){
+  return {Available:'#2BD9B9',Assigned:'#F5A623','In Mission':'#4EA1FF',Unavailable:'#5C6A8A',OPEN:'#FF6B4A',MATCHING:'#F5A623',ASSIGNED:'#4EA1FF',DEPLOYED:'#9B8CFF','IN PROGRESS':'#F5A623',COMPLETED:'#2BD9B9'}[s]||'#5C6A8A';
+}
+function statusPill(s){
+  return `<span class="inline-flex items-center gap-1.5 text-[11px] font-semibold" style="color:${statusColor(s)}"><span class="status-dot" style="background:${statusColor(s)}"></span>${s}</span>`;
+}
+/* ---------- BADGE / FELICITATION TIER SYSTEM ---------- */
+const BADGE_TIERS = [
+  { key:'gold',   min:10, label:'Gold',   icon:'🥇', color:'#FFD24D', color2:'#B8860B', glow:'rgba(255,210,77,.45)' },
+  { key:'silver', min:6,  label:'Silver', icon:'🥈', color:'#E3E9F2', color2:'#8B95A5', glow:'rgba(210,220,235,.35)' },
+  { key:'bronze', min:3,  label:'Bronze', icon:'🥉', color:'#E6A96B', color2:'#8B5A2B', glow:'rgba(230,169,107,.35)' },
+];
+function getBadge(completedMissions){
+  return BADGE_TIERS.find(t => completedMissions >= t.min) || null;
+}
+function badgeChip(completedMissions, size){
+  const b = getBadge(completedMissions);
+  if(!b) return `<span class="badge" style="background:rgba(140,155,175,.10);color:#8c9baf;border:1px solid rgba(140,155,175,.2)">New Responder</span>`;
+  const sz = size==='sm' ? 'text-[9.5px] py-[3px] px-[7px]' : 'text-[10px] py-[4px] px-[9px]';
+  return `<span class="badge-tier badge-tier-${b.key} ${sz}">${b.icon} ${b.label} Responder</span>`;
+}
+function nextBadgeHint(completedMissions){
+  const next = [...BADGE_TIERS].reverse().find(t => completedMissions < t.min);
+  if(!next) return `<span class="text-[10.5px] text-[var(--text-faint)]">🏆 Top tier reached</span>`;
+  return `<span class="text-[10.5px] text-[var(--text-faint)]">${next.min - completedMissions} more mission${next.min-completedMissions===1?'':'s'} to ${next.icon} ${next.label}</span>`;
+}
+
+function scoreRing(score){
+  const c = score>=85?'#2BD9B9':score>=70?'#F5A623':'#FF6B4A';
+  const r=24, circ=2*Math.PI*r, off=circ*(1-score/100);
+  return `<div class="score-ring">
+    <svg width="56" height="56"><circle cx="28" cy="28" r="${r}" stroke="#223050" stroke-width="5" fill="none"/>
+    <circle cx="28" cy="28" r="${r}" stroke="${c}" stroke-width="5" fill="none" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round"/></svg>
+    <div class="txt" style="color:${c}">${score}%</div>
+  </div>`;
+}
+
+/* ---------- SCORING ENGINE (transparent weights: skill/type 25, availability 20, distance 20, verification 15, capacity/suitability 10, workload 10) ---------- */
+function scoreVolunteer(v, need){
+  const req = need.requiredSkills||[];
+  const matched = req.filter(s=>v.skills.includes(s));
+  const skillFrac = req.length ? matched.length/req.length : 1;
+  const skillScore = skillFrac*25;
+  const availScore = v.status==='Available' ? 20 : 0;
+  const dist = haversine(v.lat,v.lng,need.lat,need.lng);
+  const distScore = Math.max(0, 20*(1-dist/8));
+  const verScore = v.verified ? 15 : 6;
+  const workloadScore = Math.max(0, 10*(1-v.workload/3));
+  const suitScore = 10;
+  const total = Math.min(100, Math.round(skillScore+availScore+distScore+verScore+workloadScore+suitScore));
+  const reasons = [];
+  reasons.push(req.length ? (matched.length? `✓ ${matched.join(', ')} match` : `⚠ No required skill match`) : `✓ Skill not restricted`);
+  reasons.push(availScore? '✓ Available now' : `✗ Currently ${v.status}`);
+  reasons.push(`${dist<3?'✓':'•'} ${dist.toFixed(1)} km away`);
+  reasons.push(v.verified? '✓ Verified' : '⚠ Not verified');
+  reasons.push(workloadScore>=7? '✓ Low current workload' : `• Workload: ${v.workload} active`);
+  return {entity:v, type:'volunteer', total, dist, reasons};
+}
+function scoreVehicle(veh, need){
+  const relevant = need.requiredVehicles>0;
+  const skillScore = relevant ? 25 : 15;
+  const availScore = veh.status==='Available' ? 20 : 0;
+  const dist = haversine(veh.lat,veh.lng,need.lat,need.lng);
+  const distScore = Math.max(0, 20*(1-dist/8));
+  const verScore = veh.verified ? 15 : 6;
+  const neededCap = need.affected ? Math.max(1, Math.ceil(need.affected/(need.requiredVehicles||1))) : 1;
+  const suitScore = 10*Math.min(1, veh.capacity/neededCap);
+  const workloadScore = 10;
+  const total = Math.min(100, Math.round(skillScore+availScore+distScore+verScore+suitScore+workloadScore));
+  const reasons = [
+    '✓ Suitable vehicle type for mission',
+    availScore? '✓ Available now' : `✗ Currently ${veh.status}`,
+    `${dist<3?'✓':'•'} ${dist.toFixed(1)} km away`,
+    veh.verified? '✓ Verified' : '⚠ Not verified',
+    `${veh.capacity>=neededCap?'✓':'•'} Capacity: ${veh.capacity} (need ~${neededCap})`
+  ];
+  return {entity:veh, type:'vehicle', total, dist, reasons};
+}
+function scoreSupply(res, need, reqType, reqQty){
+  const skillScore = res.name===reqType ? 25 : 0;
+  const availScore = res.status==='Available' ? 20 : 0;
+  const dist = haversine(res.lat,res.lng,need.lat,need.lng);
+  const distScore = Math.max(0, 20*(1-dist/8));
+  const verScore = res.verified ? 15 : 6;
+  const suitScore = 10*Math.min(1, res.quantity/(reqQty||1));
+  const workloadScore = 10;
+  const total = Math.min(100, Math.round(skillScore+availScore+distScore+verScore+suitScore+workloadScore));
+  const reasons = [
+    res.name===reqType? `✓ Matches required supply: ${reqType}` : `⚠ Different item`,
+    availScore? '✓ Available now' : `✗ Currently ${res.status}`,
+    `${dist<3?'✓':'•'} ${dist.toFixed(1)} km away`,
+    res.verified? '✓ Verified' : '⚠ Not verified',
+    `${res.quantity>=reqQty?'✓':'•'} ${res.quantity} ${res.unit} available (need ${reqQty})`
+  ];
+  return {entity:res, type:'supply', total, dist, reasons, supplyType:reqType};
+}
+
+/* Build the recommended bundle for a need. excludeIds lets the simulation avoid double-booking. */
+function findBundle(need, excludeIds=new Set()){
+  const availVols = volunteers.filter(v=>v.status==='Available' && !excludeIds.has(v.id));
+  const scoredVols = availVols.map(v=>scoreVolunteer(v,need)).sort((a,b)=>b.total-a.total);
+  const chosenVols = scoredVols.slice(0, need.requiredVolunteers);
+
+  const availVeh = vehicles.filter(v=>v.status==='Available' && !excludeIds.has(v.id));
+  const scoredVeh = availVeh.map(v=>scoreVehicle(v,need)).sort((a,b)=>b.total-a.total);
+  const chosenVeh = scoredVeh.slice(0, need.requiredVehicles);
+
+  const chosenSupplies = [];
+  Object.entries(need.requiredSupplies||{}).forEach(([type,qty])=>{
+    const pool = resourcesList.filter(r=>r.name===type && r.status==='Available' && !excludeIds.has(r.id));
+    const scored = pool.map(r=>scoreSupply(r,need,type,qty)).sort((a,b)=>b.total-a.total);
+    if(scored.length) chosenSupplies.push(scored[0]);
+  });
+
+  const allChosen = [...chosenVols, ...chosenVeh, ...chosenSupplies];
+  const requirementsCount = need.requiredVolunteers + need.requiredVehicles + Object.keys(need.requiredSupplies||{}).length;
+  const fulfilled = chosenVols.length + chosenVeh.length + chosenSupplies.length;
+  const coverage = requirementsCount ? Math.round((fulfilled/requirementsCount)*100) : 100;
+
+  return {need, volunteers:chosenVols, vehicles:chosenVeh, supplies:chosenSupplies, coverage, avgScore: allChosen.length? Math.round(allChosen.reduce((s,x)=>s+x.total,0)/allChosen.length) : 0};
+}
+
+/* ---------- AI NEED PARSER (mock NLP, regex/keyword based) ---------- */
+function parseNeedText(text){
+  const lower = text.toLowerCase();
+  let zone = ZONES.find(z=>lower.includes(z.name.toLowerCase()));
+  if(!zone) zone = pick(ZONES);
+  const affectedMatch = lower.match(/(\d+)\s*(people|persons|villagers|residents|families)/);
+  const affected = affectedMatch ? parseInt(affectedMatch[1]) : 0;
+  const hoursMatch = lower.match(/(\d+)\s*(hour|hours|hr|hrs)/);
+  const deadlineHours = hoursMatch ? parseInt(hoursMatch[1]) : 4;
+  const volMatch = lower.match(/(\d+)\s*volunteers?/);
+  const requiredVolunteers = volMatch ? parseInt(volMatch[1]) : Math.max(2, Math.ceil(affected/10));
+  const vehMatch = lower.match(/(\d+)\s*(vehicle|vehicles|van|vans|ambulance|ambulances|boat|boats|truck|trucks)/);
+  const requiredVehicles = vehMatch ? parseInt(vehMatch[1]) : (affected>0?1:0);
+  const waterMatch = lower.match(/(\d+)\s*(water bottles|water units|litres of water|water)/);
+  const foodMatch = lower.match(/(\d+)\s*(food packets|food)/);
+  const blanketMatch = lower.match(/(\d+)\s*(blankets)/);
+  const requiredSupplies = {};
+  if(waterMatch) requiredSupplies['Water'] = parseInt(waterMatch[1]);
+  if(foodMatch) requiredSupplies['Food Packets'] = parseInt(foodMatch[1]);
+  if(blanketMatch) requiredSupplies['Blankets'] = parseInt(blanketMatch[1]);
+
+  let requiredSkills = [];
+  if(/flood|drown|water|swim/.test(lower)) requiredSkills.push('Swimming','Rescue Support');
+  if(/injur|medical|hurt|sick|wound/.test(lower)) requiredSkills.push('Medical Support','First Aid');
+  if(/evacuat|stranded|trapped/.test(lower)) requiredSkills.push('Rescue Support');
+  if(/crowd|camp|shelter/.test(lower)) requiredSkills.push('Crowd Management');
+  if(/transport|drive|vehicle/.test(lower)) requiredSkills.push('Driving');
+  requiredSkills = [...new Set(requiredSkills)];
+  if(!requiredSkills.length) requiredSkills = ['Logistics'];
+
+  let priority = 'High';
+  if(/critical|urgent|emergency|stranded|trapped|drowning|flood/.test(lower)) priority = 'Critical';
+  else if(/medium|routine/.test(lower)) priority = 'Medium';
+
+  let title = 'Emergency Response Mission';
+  if(/flood/.test(lower)) title = 'Flood Evacuation & Relief';
+  else if(/medical|injur/.test(lower)) title = 'Medical Emergency Response';
+  else if(/food/.test(lower)) title = 'Food Supply Mission';
+  else if(/water/.test(lower) && !/flood/.test(lower)) title = 'Water Relief Mission';
+
+  const pos = jitter(zone.lat, zone.lng);
+  return {
+    title, zone: zone.name, lat: pos.lat, lng: pos.lng,
+    description: text, priority, affected, deadlineHours,
+    requiredVolunteers, requiredVehicles, requiredSupplies, requiredSkills
+  };
+}
+
+let pendingExtraction = null;
+let currentBundle = null;
+
+function fillSampleNeed(){
+  document.getElementById('ai-input').value = "30 people stranded in Aliganj due to flooding. We need four volunteers, one vehicle and 300 water bottles within two hours.";
+}
+
+function runAIParse(){
+  const text = document.getElementById('ai-input').value.trim();
+  if(!text){ showToast('Type or paste a need description first.','warn'); return; }
+  document.getElementById('ai-confirm-card').classList.add('hidden');
+  document.getElementById('bundle-section').classList.add('hidden');
+  const wrap = document.getElementById('ai-terminal-wrap');
+  const term = document.getElementById('ai-terminal');
+  wrap.classList.remove('hidden');
+  term.innerHTML = '';
+  document.getElementById('ai-loading').classList.remove('hidden');
+
+  const extraction = parseNeedText(text);
+  pendingExtraction = extraction;
+
+  const lines = [
+    'Reading incoming report...',
+    `Location detected: ${extraction.zone}`,
+    extraction.affected? `Affected people: ${extraction.affected}` : 'Affected people: not specified',
+    `Priority classified: ${extraction.priority}`,
+    `Deadline: ${extraction.deadlineHours} hour(s)`,
+    `Required volunteers: ${extraction.requiredVolunteers} (skills: ${extraction.requiredSkills.join(', ')})`,
+    extraction.requiredVehicles? `Required vehicles: ${extraction.requiredVehicles}` : null,
+    Object.keys(extraction.requiredSupplies).length? `Required supplies: ${Object.entries(extraction.requiredSupplies).map(([k,v])=>`${v} ${k}`).join(', ')}` : null,
+    'Structuring mission object...',
+  ].filter(Boolean);
+
+  let i=0;
+  function typeNext(){
+    if(i>0) term.querySelector('.caret')?.classList.remove('caret');
+    if(i<lines.length){
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="ok">▸</span> ${lines[i]}<span class="caret"></span>`;
+      term.appendChild(div);
+      term.scrollTop = term.scrollHeight;
+      i++;
+      setTimeout(typeNext, 260);
+    } else {
+      document.getElementById('ai-loading').classList.add('hidden');
+      showAIConfirmCard(extraction);
+    }
+  }
+  typeNext();
+}
+
+function showAIConfirmCard(ex){
+  document.getElementById('ai-mission-title').textContent = ex.title;
+  const badge = document.getElementById('ai-priority-badge');
+  badge.className = 'badge ' + ({Critical:'badge-critical',High:'badge-high',Medium:'badge-medium'}[ex.priority]);
+  badge.textContent = ex.priority.toUpperCase();
+  document.getElementById('ai-mission-grid').innerHTML = `
+    <div class="card px-2.5 py-2"><div class="text-[var(--text-faint)] text-[10px]">LOCATION</div>${ex.zone}</div>
+    <div class="card px-2.5 py-2"><div class="text-[var(--text-faint)] text-[10px]">AFFECTED</div>${ex.affected||'—'}</div>
+    <div class="card px-2.5 py-2"><div class="text-[var(--text-faint)] text-[10px]">DEADLINE</div>${ex.deadlineHours} hr</div>
+    <div class="card px-2.5 py-2"><div class="text-[var(--text-faint)] text-[10px]">VOLUNTEERS</div>${ex.requiredVolunteers}</div>
+    <div class="card px-2.5 py-2"><div class="text-[var(--text-faint)] text-[10px]">VEHICLES</div>${ex.requiredVehicles}</div>
+    <div class="card px-2.5 py-2"><div class="text-[var(--text-faint)] text-[10px]">SUPPLIES</div>${Object.keys(ex.requiredSupplies).length? Object.entries(ex.requiredSupplies).map(([k,v])=>`${v} ${k}`).join(', ') : '—'}</div>
+  `;
+  document.getElementById('ai-confirm-card').classList.remove('hidden');
+}
+function dismissAICard(){
+  document.getElementById('ai-confirm-card').classList.add('hidden');
+  document.getElementById('ai-terminal-wrap').classList.add('hidden');
+  pendingExtraction = null;
+}
+
+function confirmAndFind(){
+  if(!pendingExtraction) return;
+  const ex = pendingExtraction;
+  const need = {
+    id: uid('N'), title: ex.title, description: ex.description, zone: ex.zone, lat: ex.lat, lng: ex.lng,
+    priority: ex.priority, affected: ex.affected, requiredSkills: ex.requiredSkills,
+    requiredVolunteers: ex.requiredVolunteers, requiredVehicles: ex.requiredVehicles, requiredSupplies: ex.requiredSupplies,
+    deadlineHours: ex.deadlineHours, status:'MATCHING', createdAt: Date.now(), aiGenerated:true
+  };
+  needs.unshift(need);
+  currentBundle = findBundle(need);
+  renderBundle(currentBundle);
+  document.getElementById('bundle-section').classList.remove('hidden');
+  document.getElementById('bundle-section').scrollIntoView({behavior:'smooth', block:'nearest'});
+  renderAll();
+}
+
+function renderBundle(bundle){
+  const {need, volunteers:vs, vehicles:vh, supplies:sp, coverage} = bundle;
+  document.getElementById('bundle-coverage').textContent = `Mission Coverage: ${coverage}%`;
+  const bp=document.getElementById('bundle-people-count'); if(bp) bp.textContent=vs.length;
+  const bv=document.getElementById('bundle-vehicle-count'); if(bv) bv.textContent=vh.length;
+  const bs=document.getElementById('bundle-supply-count'); if(bs) bs.textContent=sp.length;
+  document.getElementById('bundle-coverage').style.color = coverage>=90?'var(--teal)':coverage>=60?'var(--amber)':'var(--coral)';
+
+  const rows = [];
+  vs.forEach(s=>rows.push(entityRow('👤', s)));
+  vh.forEach(s=>rows.push(entityRow('🚗', s)));
+  sp.forEach(s=>rows.push(entityRow('📦', s)));
+  if(!rows.length) rows.push(`<div class="text-[13px] text-[var(--text-dim)]">No available resources matched this need right now.</div>`);
+  document.getElementById('bundle-list').innerHTML = `
+    <div class="text-[12.5px] text-[var(--text-dim)] mb-1">For <b class="text-[var(--text)]">${need.title}</b> — ${need.zone}</div>
+    ${rows.join('')}
+  `;
+}
+function entityRow(icon, s){
+  const name = s.entity.name;
+  return `<div class="card-2 rounded-xl p-3 flex items-center gap-3">
+    ${scoreRing(s.total)}
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-semibold text-[13.5px]">${icon} ${name}</span>
+        <span class="badge badge-medium mono">${s.total}% MATCH</span>
+      </div>
+      <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11.5px] text-[var(--text-dim)] mt-1">
+        ${s.reasons.map(r=>`<span>${r}</span>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function hideBundleSection(){
+  document.getElementById('bundle-section').classList.add('hidden');
+  if(currentBundle){ currentBundle.need.status = 'OPEN'; renderAll(); }
+  currentBundle = null;
+}
+
+/* ---------- ASSIGN MISSION ---------- */
+function assignCurrentMission(){
+  if(!currentBundle) return;
+  const {need, volunteers:vs, vehicles:vh, supplies:sp} = currentBundle;
+  if(!vs.length && !vh.length && !sp.length){ showToast('No resources available to assign.','warn'); return; }
+
+  vs.forEach(s=>{ s.entity.status='Assigned'; s.entity.workload++; });
+  vh.forEach(s=>{ s.entity.status='Assigned'; });
+  sp.forEach(s=>{ s.entity.status='Assigned'; });
+
+  const mission = {
+    id: uid('M'), needId: need.id, title: need.title, zone: need.zone, priority: need.priority,
+    volunteers: vs.map(s=>s.entity.id), vehicles: vh.map(s=>s.entity.id), supplies: sp.map(s=>s.entity.id),
+    matchScores: [...vs,...vh,...sp].reduce((acc,s)=>{acc[s.entity.id]=s.total; return acc;},{}),
+    status:'ASSIGNED', createdAt: Date.now(), assignedAt: Date.now()
+  };
+  missions.unshift(mission);
+  need.status = 'ASSIGNED';
+
+  showToast(`✓ <b>Mission ${mission.id}</b> created and assigned — ${need.title}`, 'success');
+  document.getElementById('bundle-section').classList.add('hidden');
+  document.getElementById('ai-confirm-card').classList.add('hidden');
+  document.getElementById('ai-terminal-wrap').classList.add('hidden');
+  document.getElementById('ai-input').value = '';
+  currentBundle = null; pendingExtraction = null;
+  renderAll();
+}
+
+/* ---------- ACTIVE MISSIONS + LIFECYCLE + REASSIGNMENT ---------- */
+const LIFECYCLE = ['OPEN','MATCHING','ASSIGNED','DEPLOYED','IN PROGRESS','COMPLETED'];
+function lifecycleBar(status){
+  const idx = LIFECYCLE.indexOf(status);
+  return `<div class="lifecycle">${LIFECYCLE.map((s,i)=>`
+    <div class="lc-step ${i<idx?'done':i===idx?'current':''}">
+      <div class="line"></div><div class="dot"></div>${s}
+    </div>`).join('')}</div>`;
+}
+function advanceMission(missionId){
+  const m = missions.find(x=>x.id===missionId); if(!m) return;
+  const idx = LIFECYCLE.indexOf(m.status);
+  if(idx < LIFECYCLE.length-1){
+    m.status = LIFECYCLE[idx+1];
+    if(m.status==='COMPLETED'){
+      m.volunteers.forEach(id=>{
+        const v=volunteers.find(x=>x.id===id);
+        if(v){
+          const badgeBefore = getBadge(v.completedMissions);
+          v.status='Available'; v.completedMissions++;
+          const badgeAfter = getBadge(v.completedMissions);
+          if(badgeAfter && (!badgeBefore || badgeAfter.key!==badgeBefore.key)){
+            showToast(`🎉 ${v.name} just earned the <b>${badgeAfter.icon} ${badgeAfter.label}</b> badge!`,'success');
+          }
+        }
+      });
+      m.vehicles.forEach(id=>{ const v=vehicles.find(x=>x.id===id); if(v){ v.status='Available'; if(NGOS.includes(v.owner)) ngoMissionCount[v.owner]=(ngoMissionCount[v.owner]||0)+1; } });
+      m.supplies.forEach(id=>{ const r=resourcesList.find(x=>x.id===id); if(r){ r.status='Available'; if(NGOS.includes(r.owner)) ngoMissionCount[r.owner]=(ngoMissionCount[r.owner]||0)+1; } });
+      const need = needs.find(n=>n.id===m.needId); if(need) need.status='COMPLETED';
+    } else if (m.status==='DEPLOYED' || m.status==='IN PROGRESS'){
+      m.volunteers.forEach(id=>{ const v=volunteers.find(x=>x.id===id); if(v) v.status='In Mission'; });
+    }
+    showToast(`Mission ${m.id} advanced to <b>${m.status}</b>`,'info');
+    renderAll();
+  }
+}
+
+function renderActiveMissions(){
+  const el = document.getElementById('active-missions-list');
+  const active = missions.filter(m=>m.status!=='COMPLETED');
+  if(!active.length){ el.innerHTML = `<div class="text-[12.5px] text-[var(--text-faint)]">No active missions yet. Confirm a need on the left to create one.</div>`; return; }
+  el.innerHTML = active.map(m=>{
+    const volNames = m.volunteers.map(id=>volunteers.find(v=>v.id===id)).filter(Boolean);
+    return `<div class="mission-card" id="mission-${m.id}">
+      <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-2">
+          <span class="mono text-[11px] text-[var(--text-faint)]">${m.id}</span>
+          <span class="font-semibold text-[13.5px]">${m.title}</span>
+        </div>
+        ${priorityBadge(m.priority)}
+      </div>
+      <div class="text-[11.5px] text-[var(--text-dim)] mb-2">📍 ${m.zone} · ${m.volunteers.length} volunteers · ${m.vehicles.length} vehicle(s) · ${m.supplies.length} supply item(s)</div>
+      <div class="mb-2.5">${lifecycleBar(m.status)}</div>
+      <div class="space-y-1 mb-2.5">
+        ${volNames.map(v=>`<div class="flex items-center justify-between text-[11.5px]">
+          <span>👤 ${v.name}${getBadge(v.completedMissions)?' '+getBadge(v.completedMissions).icon:''} <span class="text-[var(--text-faint)]">(${m.matchScores[v.id]}% match)</span> ${statusPill(v.status)}</span>
+          ${v.status!=='Unavailable' ? `<button class="text-[10.5px] text-[var(--coral)] hover:underline" onclick="simulateUnavailable('${m.id}','${v.id}')">simulate unavailable</button>` : `<span class="text-[10.5px] text-[var(--text-faint)]">reassigning...</span>`}
+        </div>`).join('')}
+      </div>
+      <div id="reassign-${m.id}"></div>
+      <div class="flex gap-2 mt-2">
+        ${m.status!=='COMPLETED' ? `<button class="btn-ghost px-3 py-1.5 text-[11.5px]" onclick="advanceMission('${m.id}')">Advance status →</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function simulateUnavailable(missionId, volId){
+  const m = missions.find(x=>x.id===missionId); const v = volunteers.find(x=>x.id===volId);
+  if(!m||!v) return;
+  v.status = 'Unavailable';
+  renderAll();
+  const box = document.getElementById('reassign-'+missionId);
+  box.innerHTML = `<div class="card rounded-lg p-2.5 mt-1 fade-in">
+    <div class="text-[11.5px] font-bold text-[var(--coral)]">⚠ RESOURCE UNAVAILABLE</div>
+    <div class="text-[11.5px] text-[var(--text-dim)]">${v.name} is no longer available. Finding the best replacement<span class="caret"></span></div>
+  </div>`;
+  showToast(`⚠ ${v.name} became unavailable on <b>${m.id}</b>`, 'warn');
+
+  setTimeout(()=>{
+    const need = needs.find(n=>n.id===m.needId) || {requiredSkills:v.skills, lat:v.lat, lng:v.lng};
+    const excluded = new Set([...m.volunteers]);
+    const candidates = volunteers.filter(x=>x.status==='Available' && !excluded.has(x.id));
+    const scored = candidates.map(c=>scoreVolunteer(c, need)).sort((a,b)=>b.total-a.total);
+    if(!scored.length){
+      box.innerHTML = `<div class="card rounded-lg p-2.5 mt-1 fade-in text-[11.5px] text-[var(--coral)]">No replacement currently available nearby.</div>`;
+      return;
+    }
+    const best = scored[0];
+    box.innerHTML = `<div class="card rounded-lg p-3 mt-1 fade-in glow-teal">
+      <div class="text-[11px] font-bold text-[var(--teal)] mb-1">REPLACEMENT FOUND</div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="font-semibold text-[13px]">${best.entity.name}</span>
+        <span class="badge badge-ver mono">${best.total}% Match</span>
+      </div>
+      <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[var(--text-dim)] mb-2">${best.reasons.map(r=>`<span>${r}</span>`).join('')}</div>
+      <button class="btn-teal px-3 py-1.5 text-[11.5px]" onclick="reassign('${m.id}','${v.id}','${best.entity.id}')">REASSIGN</button>
+    </div>`;
+  }, 1200);
+}
+function reassign(missionId, oldId, newId){
+  const m = missions.find(x=>x.id===missionId);
+  const newV = volunteers.find(x=>x.id===newId);
+  if(!m||!newV) return;
+  m.volunteers = m.volunteers.map(id=> id===oldId ? newId : id);
+  m.matchScores[newId] = m.matchScores[oldId];
+  delete m.matchScores[oldId];
+  newV.status = m.status==='DEPLOYED'||m.status==='IN PROGRESS' ? 'In Mission' : 'Assigned';
+  newV.workload++;
+  showToast(`✓ Reassigned to <b>${newV.name}</b> on ${m.id}`,'success');
+  renderAll();
+}
+
+/* ---------- RESOURCE AVAILABILITY + GAPS ---------- */
+function renderResourceAvailability(){
+  const groups = [
+    {label:'Volunteers', data: volunteers},
+    {label:'Vehicles', data: vehicles},
+    {label:'Equipment / Supplies', data: resourcesList},
+  ];
+  document.getElementById('resource-avail').innerHTML = groups.map(g=>{
+    const statuses = ['Available','Assigned','In Mission','Unavailable'];
+    const counts = statuses.map(s=>g.data.filter(x=>x.status===s).length);
+    const total = g.data.length || 1;
+    return `<div>
+      <div class="flex justify-between text-[12px] mb-1"><span class="font-semibold">${g.label}</span><span class="text-[var(--text-faint)]">${g.data.length} total</span></div>
+      <div class="flex h-2.5 rounded-full overflow-hidden">
+        ${counts.map((c,i)=>c? `<div style="width:${(c/total)*100}%; background:${statusColor(statuses[i])}"></div>`:'').join('')}
+      </div>
+      <div class="flex flex-wrap gap-x-3 mt-1 text-[10.5px] text-[var(--text-dim)]">
+        ${statuses.map((s,i)=>counts[i]? `<span class="flex items-center gap-1"><span class="status-dot" style="background:${statusColor(s)}"></span>${s}: ${counts[i]}</span>`:'').join('')}
+      </div>
+    </div>`;
+  }).join('<div class="h-1"></div>');
+}
+
+function renderResourceGaps(){
+  const el = document.getElementById('resource-gaps');
+  el.innerHTML = ZONES.map(z=>{
+    const needCount = needs.filter(n=>n.zone===z.name && n.status!=='COMPLETED').length * 4; // demand proxy
+    const availCount = volunteers.filter(v=>v.zone===z.name && v.status==='Available').length
+                       + vehicles.filter(v=>v.zone===z.name && v.status==='Available').length
+                       + resourcesList.filter(r=>r.zone===z.name && r.status==='Available').length;
+    const gap = availCount - needCount;
+    const critical = gap < 0;
+    return `<div class="card-2 rounded-xl p-3 ${critical?'zone-gap-critical':'zone-gap-good'}" style="border-width:1px;border-style:solid;">
+      <div class="font-semibold text-[13px] mb-1">${z.name}</div>
+      <div class="text-[11px] text-[var(--text-dim)] mb-1">Needs (weighted): ${needCount} · Available: ${availCount}</div>
+      <div class="text-[13px] font-bold ${critical?'text-[var(--coral)]':'text-[var(--teal)]'}">
+        ${critical? `RESOURCE GAP: ${gap}` : `SURPLUS: +${gap}`} ${critical?'🔴':'🟢'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- CRITICAL / OPEN NEEDS LIST ---------- */
+function renderCriticalNeeds(){
+  const el = document.getElementById('critical-needs-list');
+  const list = needs.filter(n=>n.status==='OPEN').sort((a,b)=>{
+    const order = {Critical:0,High:1,Medium:2,Low:3};
+    return order[a.priority]-order[b.priority];
+  });
+  if(!list.length){ el.innerHTML = `<div class="text-[12.5px] text-[var(--text-faint)]">No open needs right now.</div>`; return; }
+  el.innerHTML = list.map(n=>`
+    <div class="card-2 rounded-xl p-3.5 flex items-start justify-between gap-3 hover:border-[#3b5872] transition-colors">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+          <span class="mono text-[10.5px] text-[var(--text-faint)]">${n.id}</span>
+          <span class="font-semibold text-[13px]">${n.title}</span>
+          ${priorityBadge(n.priority)}
+        </div>
+        <div class="text-[11.5px] text-[var(--text-dim)]">📍 ${n.zone} ${n.affected?`· ${n.affected} affected`:''} · needs ${n.requiredVolunteers} vol, ${n.requiredVehicles} veh · ⏱ ${n.deadlineHours}h</div>
+      </div>
+      <button class="btn-ghost px-2.5 py-1.5 text-[11px] shrink-0" onclick="findResourcesForNeed('${n.id}')">Find Resources</button>
+    </div>`).join('');
+}
+function findResourcesForNeed(needId){
+  const need = needs.find(n=>n.id===needId); if(!need) return;
+  need.status = 'MATCHING';
+  currentBundle = findBundle(need);
+  renderBundle(currentBundle);
+  document.getElementById('bundle-section').classList.remove('hidden');
+  document.getElementById('bundle-section').scrollIntoView({behavior:'smooth', block:'start'});
+  renderAll();
+}
+
+/* ---------- VOLUNTEERS TAB ---------- */
+function renderVolunteersTab(){
+  const skillSel = document.getElementById('vol-filter-skill');
+  if(skillSel.options.length<=1){ SKILLS.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; skillSel.appendChild(o); }); }
+  const statusF = document.getElementById('vol-filter-status').value;
+  const skillF = document.getElementById('vol-filter-skill').value;
+  let list = volunteers;
+  if(statusF) list = list.filter(v=>v.status===statusF);
+  if(skillF) list = list.filter(v=>v.skills.includes(skillF));
+  document.getElementById('volunteers-grid').innerHTML = list.map(v=>`
+    <div class="card p-4">
+      <div class="flex items-start justify-between mb-2">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[13px]" style="background:#1c2a45;color:var(--blue)">${v.name.split(' ').map(x=>x[0]).join('')}</div>
+          <div>
+            <div class="font-semibold text-[13.5px]">${v.name}</div>
+            <div class="text-[11px] text-[var(--text-faint)]">${v.id} · 📍 ${v.zone}</div>
+          </div>
+        </div>
+        ${statusPill(v.status)}
+      </div>
+      <div class="flex flex-wrap gap-1 mb-2">${v.skills.map(s=>`<span class="badge badge-medium">${s}</span>`).join('')}</div>
+      <div class="text-[11.5px] text-[var(--text-dim)] flex flex-wrap gap-x-3 gap-y-0.5">
+        <span>🕒 Until ${v.availableUntil}</span>
+        <span>📋 Workload: ${v.workload}</span>
+        <span>🏁 ${v.completedMissions} completed</span>
+      </div>
+      <div class="mt-2 flex items-center gap-2 flex-wrap">${verBadge(v.verified)}${badgeChip(v.completedMissions,'sm')}</div>
+      <div class="mt-1.5 flex items-center justify-between gap-2">
+        ${nextBadgeHint(v.completedMissions)}
+        <button class="text-[10.5px] font-semibold text-[var(--accent2)] hover:underline" onclick="openCertificate('volunteer','${v.id}')">🎖️ View Certificate</button>
+      </div>
+    </div>`).join('') || `<div class="text-[12.5px] text-[var(--text-faint)] col-span-full">No volunteers match this filter.</div>`;
+}
+
+/* ---------- RESOURCES TAB ---------- */
+let currentResType = 'Vehicle';
+function setResTab(t){
+  currentResType = t;
+  document.querySelectorAll('[data-rtab]').forEach(b=>b.classList.toggle('active', b.dataset.rtab===t));
+  renderResourcesTab();
+}
+function renderResourcesTab(){
+  const grid = document.getElementById('resources-grid');
+  if(currentResType==='Vehicle'){
+    grid.innerHTML = vehicles.map(v=>`
+      <div class="card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div><div class="font-semibold text-[13.5px]">🚗 ${v.name}</div><div class="text-[11px] text-[var(--text-faint)]">${v.id} · ${v.owner}</div></div>
+          ${statusPill(v.status)}
+        </div>
+        <div class="text-[11.5px] text-[var(--text-dim)] flex flex-wrap gap-x-3 gap-y-0.5 mb-2">
+          <span>📍 ${v.zone}</span><span>👥 Capacity: ${v.capacity}</span>
+        </div>
+        ${verBadge(v.verified)}
+      </div>`).join('');
+  } else {
+    grid.innerHTML = resourcesList.filter(r=>r.type===currentResType).map(r=>`
+      <div class="card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div><div class="font-semibold text-[13.5px]">📦 ${r.name}</div><div class="text-[11px] text-[var(--text-faint)]">${r.id} · ${r.owner}</div></div>
+          ${statusPill(r.status)}
+        </div>
+        <div class="text-[11.5px] text-[var(--text-dim)] flex flex-wrap gap-x-3 gap-y-0.5 mb-2">
+          <span>📍 ${r.zone}</span><span>📦 ${r.quantity} ${r.unit}</span>
+        </div>
+        ${verBadge(r.verified)}
+      </div>`).join('');
+  }
+}
+function toggleRegisterForm(){
+  const f = document.getElementById('register-form');
+  f.classList.toggle('hidden');
+  const zoneSel = document.getElementById('reg-zone');
+  if(!zoneSel.options.length) ZONES.forEach(z=>{ const o=document.createElement('option'); o.textContent=z.name; zoneSel.appendChild(o); });
+}
+function submitResource(){
+  const name = document.getElementById('reg-name').value.trim();
+  const type = document.getElementById('reg-type').value;
+  const qty = parseInt(document.getElementById('reg-qty').value)||1;
+  const zoneName = document.getElementById('reg-zone').value;
+  if(!name){ showToast('Give the resource a name first.','warn'); return; }
+  const zone = zoneByName(zoneName); const pos = jitter(zone.lat,zone.lng);
+  if(type==='Vehicle'){
+    vehicles.push({id:uid('VH'), name, type:'Custom', capacity:qty, owner:'Your Organization', zone:zone.name, lat:pos.lat, lng:pos.lng, status:'Available', verified:false});
+  } else {
+    resourcesList.push({id:uid('RS'), name, type, unit:'units', quantity:qty, owner:'Your Organization', zone:zone.name, lat:pos.lat, lng:pos.lng, status:'Available', verified:false});
+  }
+  showToast(`✓ ${name} added to inventory (pending verification)`, 'success');
+  document.getElementById('reg-name').value=''; document.getElementById('reg-qty').value='';
+  document.getElementById('register-form').classList.add('hidden');
+  renderAll();
+}
+
+/* ---------- ALL NEEDS TAB ---------- */
+function renderAllNeedsTab(){
+  document.getElementById('all-needs-list').innerHTML = needs.map(n=>`
+    <div class="card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="mono text-[11px] text-[var(--text-faint)]">${n.id}</span>
+          <span class="font-semibold text-[14px]">${n.title}</span>
+          ${priorityBadge(n.priority)}
+          ${n.aiGenerated?'<span class="badge badge-medium">🧠 AI-parsed</span>':''}
+        </div>
+        ${statusPill(n.status)}
+      </div>
+      <p class="text-[12px] text-[var(--text-dim)] mb-2">${n.description}</p>
+      <div class="text-[11.5px] text-[var(--text-dim)] flex flex-wrap gap-x-4 gap-y-1">
+        <span>📍 ${n.zone}</span>
+        ${n.affected?`<span>👥 ${n.affected} affected</span>`:''}
+        <span>🧑‍🤝‍🧑 ${n.requiredVolunteers} volunteers</span>
+        <span>🚗 ${n.requiredVehicles} vehicles</span>
+        <span>⏱ ${n.deadlineHours}h deadline</span>
+        ${Object.keys(n.requiredSupplies||{}).length?`<span>📦 ${Object.entries(n.requiredSupplies).map(([k,v])=>`${v} ${k}`).join(', ')}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+/* ================================================================
+   LEADERBOARD + FELICITATION CERTIFICATE SYSTEM
+   ================================================================ */
+function rankRow(rank, name, sub, count, badgeHtml, onclickAttr){
+  const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+  return `<div class="leader-row" ${onclickAttr||''}>
+    <div class="leader-rank">${medal}</div>
+    <div class="flex-1 min-w-0">
+      <div class="font-semibold text-[12.5px] truncate">${name}</div>
+      <div class="text-[10.5px] text-[var(--text-faint)] truncate">${sub}</div>
+    </div>
+    ${badgeHtml}
+    <div class="text-right">
+      <div class="font-bold text-[13px] mono" style="color:var(--accent2)">${count}</div>
+      <div class="text-[9px] text-[var(--text-faint)] uppercase tracking-wide">missions</div>
+    </div>
+  </div>`;
+}
+
+function renderLeaderboardTab(){
+  const volList = [...volunteers].sort((a,b)=>b.completedMissions-a.completedMissions).slice(0,10);
+  document.getElementById('leaderboard-volunteers').innerHTML = volList.map((v,i)=>
+    rankRow(i+1, v.name, `${v.id} · 📍 ${v.zone}`, v.completedMissions, badgeChip(v.completedMissions,'sm'),
+      `style="cursor:pointer" onclick="openCertificate('volunteer','${v.id}')"`)
+  ).join('') || `<div class="text-[12px] text-[var(--text-faint)]">No volunteers yet.</div>`;
+
+  const ngoList = NGOS.map(n => ({ name:n, count: ngoMissionCount[n]||0 })).sort((a,b)=>b.count-a.count);
+  document.getElementById('leaderboard-ngos').innerHTML = ngoList.map((n,i)=>
+    rankRow(i+1, n.name, 'Resource Provider / NGO', n.count, badgeChip(n.count,'sm'),
+      `style="cursor:pointer" onclick="openCertificate('ngo','${n.name.replace(/'/g,"\\'")}')"`)
+  ).join('') || `<div class="text-[12px] text-[var(--text-faint)]">No NGOs yet.</div>`;
+}
+
+function openCertificate(type, id){
+  const today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const certId = 'SEVA-CERT-' + Math.floor(100000+Math.random()*900000);
+  let name, count, roleLine;
+
+  if(type==='volunteer'){
+    const v = volunteers.find(x=>x.id===id); if(!v) return;
+    name = v.name; count = v.completedMissions;
+    roleLine = `Verified Volunteer · ${v.zone} Zone`;
+  } else {
+    name = id; count = ngoMissionCount[id]||0;
+    roleLine = `Resource Provider / NGO`;
+  }
+
+  const b = getBadge(count);
+  const tierLabel = b ? `${b.label} Responder` : 'Emerging Responder';
+  const tierIcon = b ? b.icon : '🌱';
+  const tierColor = b ? b.color : '#7fa8c9';
+
+  document.getElementById('certificate-content').innerHTML = `
+    <div class="cert-paper" style="--tier-color:${tierColor}">
+      <div class="cert-border">
+        <div class="cert-seal">${tierIcon}</div>
+        <div class="cert-eyebrow">SEVA-NEXUS · Emergency Resource Coordination</div>
+        <h2 class="cert-heading">Certificate of Felicitation</h2>
+        <p class="cert-line">This certificate is proudly presented to</p>
+        <h3 class="cert-name">${name}</h3>
+        <p class="cert-line">${roleLine}</p>
+        <p class="cert-body">In recognition of dedicated service and successful contribution to
+          <b>${count}</b> emergency response mission${count===1?'':'s'} coordinated through the SEVA-NEXUS platform,
+          earning the distinguished rank of</p>
+        <div class="cert-tier">${tierIcon} ${tierLabel}</div>
+        <div class="cert-footer">
+          <div class="cert-sig"><div class="cert-sig-line"></div>Response Coordinator<br>SEVA-NEXUS</div>
+          <div class="cert-meta">
+            <div>Certificate ID: <span class="mono">${certId}</span></div>
+            <div>Issued: ${today}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('certificate-overlay').classList.add('open');
+}
+function closeCertificate(){
+  document.getElementById('certificate-overlay').classList.remove('open');
+}
+
+/* ---------- MAP ---------- */
+let mapInstance = null, mapLayer = null;
+function initMapIfNeeded(){
+  if(mapInstance) { mapInstance.invalidateSize(); renderMapMarkers(); return; }
+  mapInstance = L.map('map', {zoomControl:true}).setView([26.86, 80.98], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap contributors'}).addTo(mapInstance);
+  mapLayer = L.layerGroup().addTo(mapInstance);
+  renderMapMarkers();
+}
+function dotIcon(color){
+  return L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #0A101C;box-shadow:0 0 0 2px ${color}55"></div>`, className:'', iconSize:[14,14]});
+}
+function renderMapMarkers(){
+  if(!mapLayer) return;
+  mapLayer.clearLayers();
+  volunteers.forEach(v=>L.marker([v.lat,v.lng],{icon:dotIcon('#2BD9B9')}).addTo(mapLayer).bindPopup(`<b>👤 ${v.name}</b><br>${v.skills.join(', ')}<br>Status: ${v.status}<br>📍 ${v.zone}`));
+  vehicles.forEach(v=>L.marker([v.lat,v.lng],{icon:dotIcon('#4EA1FF')}).addTo(mapLayer).bindPopup(`<b>🚗 ${v.name}</b><br>Capacity: ${v.capacity}<br>Status: ${v.status}<br>📍 ${v.zone}`));
+  resourcesList.forEach(r=>L.marker([r.lat,r.lng],{icon:dotIcon('#F5A623')}).addTo(mapLayer).bindPopup(`<b>📦 ${r.name}</b><br>${r.quantity} ${r.unit}<br>Status: ${r.status}<br>📍 ${r.zone}`));
+  needs.filter(n=>n.status!=='COMPLETED').forEach(n=>L.marker([n.lat,n.lng],{icon:dotIcon('#FF6B4A')}).addTo(mapLayer).bindPopup(`<b>🔴 ${n.title}</b><br>Priority: ${n.priority}<br>Status: ${n.status}<br>📍 ${n.zone}`));
+  const ngoZones = pickN(ZONES,3);
+  ngoZones.forEach((z,i)=>{ const pos=jitter(z.lat,z.lng); L.marker([pos.lat,pos.lng],{icon:dotIcon('#9B8CFF')}).addTo(mapLayer).bindPopup(`<b>🟣 ${NGOS[i]}</b><br>📍 ${z.name}`); });
+}
+
+/* ---------- SIMULATION MODE ---------- */
+let simNeeds = [];
+let simBefore = null, simStarted = false;
+function startSimulation(){
+  simStarted = true;
+  // Reset a slice of needs to OPEN to represent the simulated incident wave
+  simNeeds = NEED_TEMPLATES.map((t,i)=>{
+    const zone = zoneByName(t.zone); const pos = jitter(zone.lat, zone.lng);
+    return {
+      id:'SIM'+String(i+1).padStart(2,'0'), title:t.title, zone:t.zone, lat:pos.lat, lng:pos.lng,
+      priority:t.priority, affected:t.affected, requiredSkills:t.skills,
+      requiredVolunteers:t.vol, requiredVehicles:t.veh, requiredSupplies:t.supplies,
+      status:'OPEN'
+    };
+  });
+  // extend to ~20 open needs by duplicating a few with variation, per spec demo numbers
+  for(let i=0;i<10;i++){
+    const base = pick(NEED_TEMPLATES); const zone = pick(ZONES); const pos = jitter(zone.lat,zone.lng);
+    simNeeds.push({id:'SIM'+String(simNeeds.length+1).padStart(2,'0'), title:base.title, zone:zone.name, lat:pos.lat,lng:pos.lng, priority:base.priority, affected:base.affected, requiredSkills:base.skills, requiredVolunteers:base.vol, requiredVehicles:base.veh, requiredSupplies:base.supplies, status:'OPEN'});
+  }
+
+  const availVolCount = volunteers.filter(v=>v.status==='Available').length + 42; // scenario surge for demo realism
+  const availVehCount = vehicles.filter(v=>v.status==='Available').length + 3;
+  const availResCount = resourcesList.filter(r=>r.status==='Available').length;
+
+  simBefore = {
+    openNeeds: simNeeds.length,
+    coverage: 58,
+    avgAssignMin: 18,
+    utilization: 52,
+    successAssignments: Math.round(simNeeds.length*0.6)
+  };
+
+  document.getElementById('sim-stats').classList.remove('hidden');
+  document.getElementById('sim-stats').innerHTML = [
+    statCard('Affected Zones', ZONES.length, 'var(--coral)'),
+    statCard('Open Needs', simNeeds.length, 'var(--amber)'),
+    statCard('Available Volunteers', availVolCount, 'var(--teal)'),
+    statCard('Available Vehicles', availVehCount, 'var(--blue)'),
+    statCard('Available Resources', availResCount, 'var(--violet)'),
+  ].join('');
+
+  document.getElementById('sim-needs-wrap').classList.remove('hidden');
+  renderSimNeeds();
+  document.getElementById('auto-assign-btn').classList.remove('hidden');
+  document.getElementById('impact-wrap').classList.add('hidden');
+  document.getElementById('sim-progress-wrap').classList.add('hidden');
+  showToast('Flood scenario loaded across 5 zones. Ready for auto-assignment.','info');
+  document.getElementById('sim-needs-wrap').scrollIntoView({behavior:'smooth'});
+}
+function renderSimNeeds(){
+  document.getElementById('sim-needs-list').innerHTML = simNeeds.map(n=>`
+    <div class="card-2 rounded-xl p-3" id="simneed-${n.id}">
+      <div class="flex items-center justify-between mb-1">
+        <span class="font-semibold text-[12.5px]">${n.title}</span>
+        ${priorityBadge(n.priority)}
+      </div>
+      <div class="text-[11px] text-[var(--text-dim)] flex items-center justify-between">
+        <span>📍 ${n.zone} · ${n.requiredVolunteers}v/${n.requiredVehicles}veh</span>
+        ${statusPill(n.status)}
+      </div>
+    </div>`).join('');
+}
+
+function autoAssignAll(){
+  const btn = document.getElementById('auto-assign-btn');
+  btn.disabled = true;
+  const progressWrap = document.getElementById('sim-progress-wrap');
+  const log = document.getElementById('sim-log');
+  progressWrap.classList.remove('hidden');
+  log.innerHTML = '';
+  progressWrap.scrollIntoView({behavior:'smooth'});
+
+  const steps = ['Analyzing needs...','Checking availability...','Checking skills...','Checking locations...','Checking resources...','Building mission bundles...','Optimizing assignments...'];
+  let i=0;
+  function nextStep(){
+    if(i>0) log.querySelector('.caret')?.classList.remove('caret');
+    if(i<steps.length){
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="ok">▸</span> ${steps[i]}<span class="caret"></span>`;
+      log.appendChild(div); log.scrollTop = log.scrollHeight;
+      i++; setTimeout(nextStep, 320);
+    } else {
+      runAutoAssignment(log);
+    }
+  }
+  nextStep();
+}
+
+function runAutoAssignment(log){
+  const usedVolIds = new Set(volunteers.filter(v=>v.status!=='Available').map(v=>v.id));
+  const usedVehIds = new Set(vehicles.filter(v=>v.status!=='Available').map(v=>v.id));
+  const usedResIds = new Set(resourcesList.filter(r=>r.status!=='Available').map(r=>r.id));
+  let successCount = 0;
+
+  const sorted = [...simNeeds].sort((a,b)=>({Critical:0,High:1,Medium:2,Low:3}[a.priority]-{Critical:0,High:1,Medium:2,Low:3}[b.priority]));
+
+  sorted.forEach(n=>{
+    const excluded = new Set([...usedVolIds,...usedVehIds,...usedResIds]);
+    const bundle = findBundle(n, excluded);
+    const req = n.requiredVolunteers + n.requiredVehicles + Object.keys(n.requiredSupplies||{}).length;
+    const got = bundle.volunteers.length + bundle.vehicles.length + bundle.supplies.length;
+    if(got>0 && got>=Math.ceil(req*0.6)){
+      bundle.volunteers.forEach(s=>usedVolIds.add(s.entity.id));
+      bundle.vehicles.forEach(s=>usedVehIds.add(s.entity.id));
+      bundle.supplies.forEach(s=>usedResIds.add(s.entity.id));
+      n.status = 'ASSIGNED';
+      successCount++;
+
+      // reflect in real inventory too, for consistency across tabs
+      bundle.volunteers.forEach(s=>{ s.entity.status='Assigned'; s.entity.workload++; });
+      bundle.vehicles.forEach(s=>{ s.entity.status='Assigned'; });
+      bundle.supplies.forEach(s=>{ s.entity.status='Assigned'; });
+
+      missions.unshift({
+        id: uid('M'), needId:n.id, title:n.title, zone:n.zone, priority:n.priority,
+        volunteers: bundle.volunteers.map(s=>s.entity.id), vehicles: bundle.vehicles.map(s=>s.entity.id), supplies: bundle.supplies.map(s=>s.entity.id),
+        matchScores: [...bundle.volunteers,...bundle.vehicles,...bundle.supplies].reduce((a,s)=>{a[s.entity.id]=s.total;return a;},{}),
+        status:'ASSIGNED', createdAt: Date.now(), assignedAt: Date.now()
+      });
+    } else {
+      n.status = 'OPEN';
+    }
+  });
+
+  const div = document.createElement('div');
+  div.innerHTML = `<span class="ok">▸</span> Done — ${successCount}/${simNeeds.length} needs matched and assigned.`;
+  log.appendChild(div);
+
+  renderSimNeeds();
+  showImpact(successCount);
+  renderAll();
+  showToast(`⚡ Auto-assignment complete — ${successCount}/${simNeeds.length} missions created`, 'success');
+}
+
+function showImpact(successCount){
+  const openAfter = simNeeds.filter(n=>n.status==='OPEN').length;
+  const coverageAfter = Math.round(((simNeeds.length-openAfter)/simNeeds.length)*100);
+  const avgAfter = Math.max(2, Math.round(simBefore.avgAssignMin/4));
+  const utilAfter = Math.min(96, simBefore.utilization + 35);
+
+  function metric(label, before, after, suffix=''){
+    return `<div class="card-2 rounded-xl p-3 text-center">
+      <div class="text-[10.5px] font-semibold text-[var(--text-faint)] uppercase mb-1.5">${label}</div>
+      <div class="flex items-center justify-center gap-1.5 text-[16px] font-bold display">
+        <span class="text-[var(--text-faint)] font-normal text-[13px]">${before}${suffix}</span>
+        <span class="metric-arrow">→</span>
+        <span style="color:var(--teal)">${after}${suffix}</span>
+      </div>
+    </div>`;
+  }
+  document.getElementById('impact-grid').innerHTML = [
+    metric('Open Needs', simBefore.openNeeds, openAfter),
+    metric('Resource Coverage', simBefore.coverage, coverageAfter, '%'),
+    metric('Avg Assignment Time', simBefore.avgAssignMin, avgAfter, ' min'),
+    metric('Resource Utilization', simBefore.utilization, utilAfter, '%'),
+    metric('Successful Assignments', Math.round(simBefore.successAssignments*0.7), successCount),
+  ].join('');
+  document.getElementById('impact-wrap').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('impact-wrap').scrollIntoView({behavior:'smooth'}), 200);
+}
+
+/* ---------- MASTER RENDER ---------- */
+function renderAll(){
+  renderStatStrip();
+  const heroOpen=document.getElementById('hero-open-needs'); if(heroOpen) heroOpen.textContent=needs.filter(n=>n.status==='OPEN').length;
+  const heroVol=document.getElementById('hero-available-vol'); if(heroVol) heroVol.textContent=volunteers.filter(v=>v.status==='Available').length;
+  const heroM=document.getElementById('hero-active-missions'); if(heroM) heroM.textContent=missions.filter(m=>m.status!=='COMPLETED').length;
+  renderCriticalNeeds();
+  renderActiveMissions();
+  renderResourceAvailability();
+  renderResourceGaps();
+  if(document.getElementById('tab-map').classList.contains('active')) renderMapMarkers();
+  if(document.getElementById('tab-volunteers').classList.contains('active')) renderVolunteersTab();
+  if(document.getElementById('tab-resources').classList.contains('active')) renderResourcesTab();
+  if(document.getElementById('tab-needs').classList.contains('active')) renderAllNeedsTab();
+  if(document.getElementById('tab-leaderboard').classList.contains('active')) renderLeaderboardTab();
+}
+renderAll();
+
+/* ================================================================
+   UI INTERACTION ENHANCEMENTS — ripple + bounce + reveal
+   ================================================================ */
+(function(){
+  const actionSelector='button, .btn-primary, .btn-teal, .btn-ghost';
+  function bind(el){
+    if(el.dataset.uiEnhanced) return;
+    el.dataset.uiEnhanced='1';
+    el.addEventListener('click',function(e){
+      this.classList.remove('btn-bounce');
+      void this.offsetWidth;
+      this.classList.add('btn-bounce');
+      const rect=this.getBoundingClientRect();
+      const size=Math.max(rect.width,rect.height)*.75;
+      const r=document.createElement('span');
+      r.className='ui-ripple';
+      r.style.width=size+'px';
+      r.style.height=size+'px';
+      r.style.left=(e.clientX-rect.left)+'px';
+      r.style.top=(e.clientY-rect.top)+'px';
+      this.appendChild(r);
+      setTimeout(()=>r.remove(),700);
+    });
+    el.addEventListener('animationend',()=>el.classList.remove('btn-bounce'));
+  }
+  function scan(){document.querySelectorAll(actionSelector).forEach(bind)}
+  scan();
+  new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});
+
+  /* Give newly injected data panels a subtle physical entrance instead of fading into the background. */
+  const targets=['stat-strip','bundle-list','active-missions-list','critical-needs-list','resource-avail','resource-gaps','volunteers-grid','resources-grid','all-needs-list','sim-needs-list','impact-grid','leaderboard-volunteers','leaderboard-ngos','leaderboard-list'];
+  function reveal(){
+    targets.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el || !el.children.length) return;
+      Array.from(el.children).forEach((c,i)=>{
+        c.style.animationDelay=(Math.min(i,5)*45)+'ms';
+        c.classList.add('card-pop');
+      });
+    });
+  }
+  const oldRenderAll=window.renderAll;
+  if(typeof oldRenderAll==='function'){
+    window.renderAll=function(){
+      oldRenderAll();
+      requestAnimationFrame(reveal);
+    }
+  }
+  setTimeout(reveal,120);
+})();
+
+
+/* =========================================================
+   DATA CARD MICRO-INTERACTIONS
+   Automatically applies to dynamically rendered cards too.
+   ========================================================= */
+(function initDataCardInteractions(){
+  const selector = [
+    '#bundle-list .card-2',
+    '#active-missions-list .card-2',
+    '#critical-needs-list .card-2',
+    '#resource-gaps .card-2',
+    '#volunteers-grid .card',
+    '#resources-grid .card',
+    '#all-needs-list .card',
+    '#sim-needs-list .card-2',
+    '#impact-grid .card-2'
+  ].join(',');
+
+  function attachCard(card){
+    if(card.dataset.cardFxAttached === '1') return;
+    card.dataset.cardFxAttached = '1';
+
+    card.addEventListener('pointerenter', function(){
+      card.classList.remove('data-card-spring');
+      void card.offsetWidth;
+      card.classList.add('data-card-spring');
+    });
+
+    card.addEventListener('animationend', function(e){
+      if(e.animationName === 'dataCardSpring') card.classList.remove('data-card-spring');
+    });
+
+    /* Gentle 3D tilt only while the pointer is over the card. */
+    card.addEventListener('pointermove', function(e){
+      if(window.matchMedia('(hover: none)').matches) return;
+      const r=card.getBoundingClientRect();
+      const x=(e.clientX-r.left)/r.width-.5;
+      const y=(e.clientY-r.top)/r.height-.5;
+      card.style.setProperty('--mx',(x*2).toFixed(3));
+      card.style.setProperty('--my',(y*2).toFixed(3));
+      card.style.transform=`translateY(-6px) scale(1.012) rotateX(${(-y*2).toFixed(2)}deg) rotateY(${(x*2).toFixed(2)}deg)`;
+    });
+
+    card.addEventListener('pointerleave', function(){
+      card.style.transform='';
+    });
+  }
+
+  function scan(root=document){
+    root.querySelectorAll(selector).forEach(attachCard);
+  }
+
+  scan();
+  const observer=new MutationObserver(mutations=>{
+    mutations.forEach(m=>m.addedNodes.forEach(node=>{
+      if(node.nodeType!==1) return;
+      if(node.matches && node.matches(selector)) attachCard(node);
+      if(node.querySelectorAll) node.querySelectorAll(selector).forEach(attachCard);
+    }));
+  });
+  observer.observe(document.body,{childList:true,subtree:true});
+})();
+
+</script>
+
+</body>
+</html>

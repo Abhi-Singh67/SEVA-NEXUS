@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEVA-NEXUS — From Need to Mission, in Seconds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --bg:#050a12; --bg2:#0a1220; --surface:#0c1727; --surface2:#101d30;
+  --border:#243a52; --border2:#3d5871;
+  --text:#f8fbff; --muted:#a6b5c8; --faint:#647890;
+  --accent:#ffd21f; --accent-hot:#ffea66; --accent-deep:#f0b900;
+  --cyan:#42e7d0; --blue:#72b6ff; --red:#ff6c57; --green:#59e6a7; --violet:#ad9cff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 82% 8%,rgba(255,210,31,.10),transparent 30%),
+    radial-gradient(circle at 12% 92%,rgba(66,231,208,.08),transparent 30%),
+    radial-gradient(circle at 15% 5%,rgba(77,132,255,.09),transparent 26%),
+    linear-gradient(180deg,#050a12 0%,#07111d 55%,#050a12 100%);
+  color:var(--text);
+  font-family:Inter,system-ui,-apple-system,sans-serif;
+  overflow-x:hidden;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+h1,h2,.display{font-family:"Space Grotesk",Inter,sans-serif}
+.mono{font-family:"JetBrains Mono",monospace}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#29415d;border-radius:20px}::-webkit-scrollbar-track{background:transparent}
+::selection{background:var(--accent);color:#111}
+
+/* ---- animated grid backdrop ---- */
+.grid-bg{position:fixed;inset:0;pointer-events:none;opacity:.16;
+  background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(circle at 50% 40%,black 0%,transparent 72%);
+  animation:gridPan 26s linear infinite;
+}
+@keyframes gridPan{from{background-position:0 0,0 0}to{background-position:120px 80px,120px 80px}}
+
+/* ---- floating glow orbs ---- */
+.orb{position:fixed;border-radius:50%;filter:blur(60px);pointer-events:none;opacity:.5;z-index:0}
+.orb1{width:420px;height:420px;background:radial-gradient(circle,rgba(255,210,31,.28),transparent 70%);top:-120px;right:-100px;animation:floatA 14s ease-in-out infinite}
+.orb2{width:360px;height:360px;background:radial-gradient(circle,rgba(66,231,208,.22),transparent 70%);bottom:-140px;left:-100px;animation:floatB 17s ease-in-out infinite}
+.orb3{width:260px;height:260px;background:radial-gradient(circle,rgba(114,182,255,.18),transparent 70%);top:40%;left:8%;animation:floatC 20s ease-in-out infinite}
+@keyframes floatA{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-30px,40px) scale(1.08)}}
+@keyframes floatB{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.1)}}
+@keyframes floatC{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,25px) scale(.92)}}
+
+/* ---- radar pulse rings behind title (signature motif) ---- */
+.radar{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:10px;height:10px;pointer-events:none;z-index:0}
+.radar span{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:1px solid rgba(255,210,31,.45);animation:radarPulse 4s ease-out infinite}
+.radar span:nth-child(2){animation-delay:1.3s;border-color:rgba(66,231,208,.4)}
+.radar span:nth-child(3){animation-delay:2.6s;border-color:rgba(114,182,255,.35)}
+@keyframes radarPulse{0%{width:10px;height:10px;margin:-5px 0 0 -5px;opacity:.9}100%{width:900px;height:900px;margin:-450px 0 0 -450px;opacity:0}}
+
+/* ---- floating network nodes (coordination motif) ---- */
+.node{position:fixed;width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);opacity:0;animation:nodeBlink 5s ease-in-out infinite;z-index:0}
+@keyframes nodeBlink{0%,100%{opacity:0;transform:scale(.6)}45%,55%{opacity:.9;transform:scale(1)}}
+
+/* ---- content ---- */
+.stage{position:relative;z-index:2;width:100%;max-width:980px;text-align:center;margin-top:0;padding-top:clamp(8px,3vh,28px)}
+
+.brand-title{
+  position:relative;
+  display:inline-block;
+  font-family:"Space Grotesk",sans-serif;
+  font-weight:800;
+  font-size:clamp(58px,11vw,128px);
+  line-height:.95;
+  letter-spacing:-.045em;
+  margin:0 auto 12px;
+  color:#ffd21f;
+  background:linear-gradient(100deg,#ffffff 6%,#ffe27a 34%,#ffd21f 52%,#ffffff 72%,#ffe27a 92%);
+  background-size:250% auto;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:shine 5s linear infinite, titleFloat 4s ease-in-out infinite;
+  text-shadow:0 0 55px rgba(255,210,31,.18);
+  filter:drop-shadow(0 0 24px rgba(255,210,31,.12));
+}
+.brand-title:after{
+  content:"";position:absolute;left:8%;right:8%;bottom:-7px;height:3px;border-radius:999px;
+  background:linear-gradient(90deg,transparent,#ffd21f 22%,#fff 50%,#ffd21f 78%,transparent);
+  opacity:.85;filter:blur(.2px);animation:linePulse 2.8s ease-in-out infinite;
+}
+@keyframes shine{to{background-position:250% center}}
+@keyframes titleFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.008)}}
+@keyframes linePulse{0%,100%{opacity:.45;transform:scaleX(.82)}50%{opacity:1;transform:scaleX(1)}}
+
+.tagline{
+  font-size:clamp(14px,1.7vw,19px);color:var(--muted);font-weight:500;letter-spacing:.01em;
+  opacity:0;animation:riseIn .7s ease forwards;animation-delay:.9s;
+}
+.tagline b{color:var(--text);font-weight:700}
+
+.subcopy{
+  margin:10px auto 0;max-width:560px;font-size:13px;line-height:1.7;color:var(--faint);
+  opacity:0;animation:riseIn .7s ease forwards;animation-delay:1.05s;
+}
+
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---- search ---- */
+.search-wrap{position:relative;max-width:640px;margin:38px auto 0;opacity:0;animation:riseIn .7s ease forwards;animation-delay:1.2s}
+.search-box{
+  position:relative;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,#101f34,#0b1728);
+  border:2px solid var(--border2);border-radius:20px;
+  padding:8px 10px 8px 22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:.25s ease;
+}
+.search-box:focus-within{
+  border-color:var(--accent);
+  box-shadow:0 0 0 5px rgba(255,210,31,.10),0 24px 65px rgba(0,0,0,.5);
+  transform:translateY(-2px);
+}
+.search-box svg{flex-shrink:0;color:var(--faint)}
+.search-box:focus-within svg{color:var(--accent)}
+#state-input{
+  flex:1;background:transparent;border:0;outline:0;color:var(--text);
+  font-size:16px;font-weight:500;padding:14px 0;min-width:0;
+}
+#state-input::placeholder{color:#5c7086}
+.search-cta{
+  flex-shrink:0;min-height:50px;padding:0 22px;border-radius:14px;
+  background:linear-gradient(180deg,#ffe66d,#ffd21f 55%,#f0bc0b);
+  color:#171300;font-weight:800;font-size:13px;border:1px solid rgba(255,255,255,.3);
+  cursor:pointer;transition:.18s;box-shadow:0 12px 24px rgba(255,210,31,.2);white-space:nowrap;
+}
+.search-cta:hover{transform:translateY(-1px);filter:brightness(1.04)}
+.search-cta:active{transform:translateY(0) scale(.97)}
+.search-hint{margin-top:12px;font-size:11px;color:var(--faint);letter-spacing:.02em}
+.search-hint b{color:#8fc8ff}
+
+/* dropdown results */
+.results{
+  position:absolute;top:calc(100% + 12px);left:0;right:0;z-index:20;
+  background:linear-gradient(180deg,#101f34,#0b1622);border:1px solid var(--border2);
+  border-radius:16px;box-shadow:0 25px 60px rgba(0,0,0,.5);
+  max-height:340px;overflow-y:auto;padding:8px;text-align:left;
+  opacity:0;transform:translateY(-6px);pointer-events:none;transition:.16s ease;
+}
+.results.open{opacity:1;transform:translateY(0);pointer-events:auto}
+.result-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;border-radius:11px;cursor:pointer;transition:.12s;
+}
+.result-item:hover,.result-item.active{background:rgba(255,210,31,.08)}
+.result-name{font-size:14px;font-weight:650;color:var(--text)}
+.result-name mark{background:transparent;color:var(--accent);font-weight:800}
+.result-type{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border-radius:999px}
+.result-type.state{color:#8fc8ff;background:rgba(114,182,255,.1);border:1px solid rgba(114,182,255,.2)}
+.result-type.ut{color:#b7a4ff;background:rgba(173,156,255,.1);border:1px solid rgba(173,156,255,.2)}
+.result-empty{padding:22px 14px;text-align:center;font-size:12.5px;color:var(--faint)}
+
+/* featured chip */
+.featured-row{margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+  opacity:0;animation:riseIn .7s ease forwards;animation-delay:1.35s}
+.featured-label{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-right:2px}
+.chip{
+  font-size:12px;font-weight:650;padding:8px 14px;border-radius:999px;cursor:pointer;
+  background:rgba(66,231,208,.08);border:1px solid rgba(66,231,208,.25);color:#8fe9dc;
+  transition:.15s;
+}
+.chip:hover{background:rgba(66,231,208,.15);transform:translateY(-1px)}
+.chip.live:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--cyan);margin-right:6px;box-shadow:0 0 8px var(--cyan)}
+
+/* footer */
+.stage-footer{margin-top:46px;display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;
+  opacity:0;animation:riseIn .7s ease forwards;animation-delay:1.5s}
+.foot-stat{text-align:center}
+.foot-stat strong{display:block;font-family:"Space Grotesk";font-size:19px;color:var(--text)}
+.foot-stat span{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-top:2px}
+.foot-divider{width:1px;height:26px;background:var(--border2)}
+
+
+@media(max-height:760px) and (min-width:641px){
+  .stage{padding-top:8px}
+  .brand-title{font-size:clamp(52px,9vw,104px);margin-bottom:10px}
+  .search-wrap{margin-top:28px}
+}
+@media(max-width:640px){
+  .top-project-title{font-size:clamp(48px,16vw,82px);line-height:.92;margin-top:0;margin-bottom:12px}
+  .search-cta{position:absolute;right:6px;top:6px;bottom:6px;padding:0 16px}
+  #state-input{padding-right:96px}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .grid-bg,.orb1,.orb2,.orb3,.radar span,.node,.brand-title{animation:none !important;}
+  .brand-title .letter{opacity:1 !important;transform:none !important;animation:none !important;}
+  .tagline,.subcopy,.search-wrap,.featured-row,.stage-footer{animation:none !important;opacity:1 !important;}
+}
+
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div class="radar"><span></span><span></span><span></span></div>
+<div id="nodes"></div>
+
+<div class="stage">
+  <h1 class="brand-title top-project-title" id="brand-title" aria-label="SEVA NEXUS">SEVA NEXUS</h1>
+
+  <p class="tagline">From <b>Need</b> to <b>Mission</b>, in seconds.</p>
+  <p class="subcopy">Select a state or union territory to enter its regional command center — where verified volunteers, vehicles and supplies are matched to real emergencies in real time.</p>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="state-input" type="text" autocomplete="off" placeholder="Search State or Union Territory… (e.g. Uttar Pradesh)">
+      <button class="search-cta" id="search-go">Enter Region →</button>
+    </div>
+    <div class="results" id="results"></div>
+    <div class="search-hint">Try typing <b>“uttarpradesh”</b>, <b>“Delhi”</b>, or <b>“Andaman”</b> — all 28 states &amp; 8 union territories are searchable.</div>
+  </div>
+
+  <div class="featured-row">
+    <span class="featured-label">Fully Live Demo</span>
+    <span class="chip live" onclick="goToState('uttar-pradesh','Uttar Pradesh','state')">Uttar Pradesh</span>
+  </div>
+
+  <div class="stage-footer">
+    <div class="foot-stat"><strong>28+8</strong><span>States &amp; UTs</span></div>
+    <div class="foot-divider"></div>
+    <div class="foot-stat"><strong>18+</strong><span>Verified Volunteers</span></div>
+    <div class="foot-divider"></div>
+    <div class="foot-stat"><strong>&lt;40s</strong><span>Target Assignment</span></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Floating coordination "nodes" scattered across the backdrop
+   ============================================================ */
+(function(){
+  const container = document.getElementById('nodes');
+  const positions = [
+    [8,20],[92,15],[15,80],[85,75],[50,10],[6,55],[94,50],[35,90],[70,88],[45,25]
+  ];
+  positions.forEach(([x,y],i)=>{
+    const n = document.createElement('div');
+    n.className = 'node';
+    n.style.left = x+'vw';
+    n.style.top = y+'vh';
+    n.style.animationDelay = (i*0.6)+'s';
+    container.appendChild(n);
+  });
+})();
+
+/* ============================================================
+   INDIA STATES & UNION TERRITORIES — searchable dataset
+   ============================================================ */
+const INDIA_REGIONS = [
+  {name:"Andhra Pradesh", slug:"andhra-pradesh", type:"state"},
+  {name:"Arunachal Pradesh", slug:"arunachal-pradesh", type:"state"},
+  {name:"Assam", slug:"assam", type:"state"},
+  {name:"Bihar", slug:"bihar", type:"state"},
+  {name:"Chhattisgarh", slug:"chhattisgarh", type:"state"},
+  {name:"Goa", slug:"goa", type:"state"},
+  {name:"Gujarat", slug:"gujarat", type:"state"},
+  {name:"Haryana", slug:"haryana", type:"state"},
+  {name:"Himachal Pradesh", slug:"himachal-pradesh", type:"state"},
+  {name:"Jharkhand", slug:"jharkhand", type:"state"},
+  {name:"Karnataka", slug:"karnataka", type:"state"},
+  {name:"Kerala", slug:"kerala", type:"state"},
+  {name:"Madhya Pradesh", slug:"madhya-pradesh", type:"state"},
+  {name:"Maharashtra", slug:"maharashtra", type:"state"},
+  {name:"Manipur", slug:"manipur", type:"state"},
+  {name:"Meghalaya", slug:"meghalaya", type:"state"},
+  {name:"Mizoram", slug:"mizoram", type:"state"},
+  {name:"Nagaland", slug:"nagaland", type:"state"},
+  {name:"Odisha", slug:"odisha", type:"state"},
+  {name:"Punjab", slug:"punjab", type:"state"},
+  {name:"Rajasthan", slug:"rajasthan", type:"state"},
+  {name:"Sikkim", slug:"sikkim", type:"state"},
+  {name:"Tamil Nadu", slug:"tamil-nadu", type:"state"},
+  {name:"Telangana", slug:"telangana", type:"state"},
+  {name:"Tripura", slug:"tripura", type:"state"},
+  {name:"Uttar Pradesh", slug:"uttar-pradesh", type:"state"},
+  {name:"Uttarakhand", slug:"uttarakhand", type:"state"},
+  {name:"West Bengal", slug:"west-bengal", type:"state"},
+  {name:"Andaman and Nicobar Islands", slug:"andaman-and-nicobar-islands", type:"ut"},
+  {name:"Chandigarh", slug:"chandigarh", type:"ut"},
+  {name:"Dadra and Nagar Haveli and Daman and Diu", slug:"dadra-nh-daman-diu", type:"ut"},
+  {name:"Delhi (NCT)", slug:"delhi", type:"ut"},
+  {name:"Jammu and Kashmir", slug:"jammu-and-kashmir", type:"ut"},
+  {name:"Ladakh", slug:"ladakh", type:"ut"},
+  {name:"Lakshadweep", slug:"lakshadweep", type:"ut"},
+  {name:"Puducherry", slug:"puducherry", type:"ut"},
+];
+
+function normalize(s){ return s.toLowerCase().replace(/[\s().]/g,''); }
+
+const input = document.getElementById('state-input');
+const resultsBox = document.getElementById('results');
+let activeIndex = -1;
+let currentMatches = [];
+
+function highlight(name, query){
+  if(!query.trim()) return name;
+  const re = new RegExp(query.trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i');
+  const m = name.match(re);
+  if(!m) return name;
+  return name.slice(0, m.index) + '<mark>' + m[0] + '</mark>' + name.slice(m.index + m[0].length);
+}
+
+function renderResults(query){
+  const q = normalize(query);
+  currentMatches = q ? INDIA_REGIONS.filter(r => normalize(r.name).includes(q)) : [];
+  activeIndex = -1;
+
+  if(!query.trim()){
+    resultsBox.classList.remove('open');
+    resultsBox.innerHTML = '';
+    return;
+  }
+
+  if(currentMatches.length === 0){
+    resultsBox.innerHTML = `<div class="result-empty">No matching state or union territory found for "<b>${query}</b>".</div>`;
+    resultsBox.classList.add('open');
+    return;
+  }
+
+  resultsBox.innerHTML = currentMatches.map((r,i) => `
+    <div class="result-item" data-index="${i}" onclick="goToState('${r.slug}','${r.name.replace(/'/g,"\\'")}','${r.type}')">
+      <span class="result-name">${highlight(r.name, query)}</span>
+      <span class="result-type ${r.type}">${r.type === 'state' ? 'State' : 'Union Territory'}</span>
+    </div>
+  `).join('');
+  resultsBox.classList.add('open');
+}
+
+input.addEventListener('input', (e) => renderResults(e.target.value));
+input.addEventListener('focus', (e) => { if(e.target.value.trim()) renderResults(e.target.value); });
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('.search-wrap')) resultsBox.classList.remove('open');
+});
+
+input.addEventListener('keydown', (e) => {
+  const items = resultsBox.querySelectorAll('.result-item');
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    if(items.length){ activeIndex = (activeIndex + 1) % items.length; updateActive(items); }
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    if(items.length){ activeIndex = (activeIndex - 1 + items.length) % items.length; updateActive(items); }
+  } else if(e.key === 'Enter'){
+    e.preventDefault();
+    if(activeIndex >= 0 && currentMatches[activeIndex]){
+      const r = currentMatches[activeIndex];
+      goToState(r.slug, r.name, r.type);
+    } else if(currentMatches.length === 1){
+      const r = currentMatches[0];
+      goToState(r.slug, r.name, r.type);
+    }
+  }
+});
+
+function updateActive(items){
+  items.forEach(el => el.classList.remove('active'));
+  if(items[activeIndex]) items[activeIndex].classList.add('active');
+}
+
+document.getElementById('search-go').addEventListener('click', () => {
+  if(currentMatches.length >= 1){
+    const r = currentMatches[0];
+    goToState(r.slug, r.name, r.type);
+  } else {
+    input.focus();
+  }
+});
+
+function goToState(slug, name, type){
+  window.location.href = `state.html?state=${encodeURIComponent(slug)}&name=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}`;
+}
+</script>
+
+</body>
+</html>

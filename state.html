@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEVA-NEXUS — Select Region</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --bg:#050a12; --bg2:#0a1220; --surface:#0c1727; --surface2:#101d30;
+  --border:#243a52; --border2:#3d5871;
+  --text:#f8fbff; --muted:#a6b5c8; --faint:#647890;
+  --accent:#ffd21f; --accent-hot:#ffea66; --accent-deep:#f0b900;
+  --cyan:#42e7d0; --blue:#72b6ff; --red:#ff6c57; --green:#59e6a7; --violet:#ad9cff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0;padding:0;min-height:100%}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 85% 0%,rgba(255,210,31,.08),transparent 28%),
+    radial-gradient(circle at 5% 100%,rgba(66,231,208,.07),transparent 30%),
+    linear-gradient(180deg,#050a12 0%,#07111d 55%,#050a12 100%);
+  color:var(--text);
+  font-family:Inter,system-ui,-apple-system,sans-serif;
+  overflow-x:hidden;
+  position:relative;
+}
+h1,h2,.display{font-family:"Space Grotesk",Inter,sans-serif}
+.mono{font-family:"JetBrains Mono",monospace}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#29415d;border-radius:20px}::-webkit-scrollbar-track{background:transparent}
+::selection{background:var(--accent);color:#111}
+
+.grid-bg{position:fixed;inset:0;pointer-events:none;opacity:.14;
+  background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(circle at 50% 20%,black 0%,transparent 75%);
+  animation:gridPan 26s linear infinite;
+}
+@keyframes gridPan{from{background-position:0 0,0 0}to{background-position:120px 80px,120px 80px}}
+
+.orb{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none;opacity:.45;z-index:0}
+.orb1{width:400px;height:400px;background:radial-gradient(circle,rgba(255,210,31,.22),transparent 70%);top:-140px;right:-80px;animation:floatA 15s ease-in-out infinite}
+.orb2{width:340px;height:340px;background:radial-gradient(circle,rgba(66,231,208,.18),transparent 70%);bottom:-120px;left:-100px;animation:floatB 18s ease-in-out infinite}
+@keyframes floatA{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,35px)}}
+@keyframes floatB{0%,100%{transform:translate(0,0)}50%{transform:translate(35px,-25px)}}
+
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ---- top bar ---- */
+.topbar{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.back-link{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:650;color:var(--muted);text-decoration:none;
+  padding:9px 15px;border-radius:11px;border:1px solid var(--border2);background:rgba(12,23,39,.6);transition:.15s}
+.back-link:hover{color:#fff;border-color:#5a7793;background:#101f34;transform:translateX(-2px)}
+.badge-live{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.08em;
+  padding:7px 12px;border-radius:999px;background:rgba(7,17,31,.7);border:1px solid var(--border2);color:var(--muted)}
+.badge-live:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:pulseDot 1.6s ease-in-out infinite}
+
+/* ---- hero ---- */
+.stage{position:relative;z-index:2;max-width:900px;margin:0 auto;padding:40px 24px 70px;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#8fc8ff;
+  padding:6px 15px;border-radius:999px;background:rgba(114,182,255,.08);border:1px solid rgba(114,182,255,.22);
+  opacity:0;animation:riseIn .6s ease forwards}
+#region-title{
+  font-size:clamp(34px,6vw,64px);font-weight:800;letter-spacing:-.03em;line-height:1.02;margin:16px 0 8px;
+  opacity:0;animation:riseIn .6s ease forwards;animation-delay:.1s;
+}
+#region-title span{color:var(--accent-hot)}
+.subcopy{max-width:560px;margin:0 auto;font-size:13px;line-height:1.7;color:var(--faint);
+  opacity:0;animation:riseIn .6s ease forwards;animation-delay:.2s}
+
+/* ---- search ---- */
+.search-wrap{position:relative;max-width:600px;margin:32px auto 0;opacity:0;animation:riseIn .6s ease forwards;animation-delay:.3s}
+.search-box{
+  position:relative;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,#101f34,#0b1728);
+  border:2px solid var(--border2);border-radius:18px;
+  padding:6px 8px 6px 20px;
+  box-shadow:0 18px 50px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03);
+  transition:.25s ease;
+}
+.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 5px rgba(255,210,31,.09),0 22px 55px rgba(0,0,0,.45);transform:translateY(-2px)}
+.search-box svg{flex-shrink:0;color:var(--faint)}
+.search-box:focus-within svg{color:var(--accent)}
+#city-input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:15px;font-weight:500;padding:13px 0;min-width:0}
+#city-input::placeholder{color:#5c7086}
+.results{
+  position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:20;
+  background:linear-gradient(180deg,#101f34,#0b1622);border:1px solid var(--border2);
+  border-radius:15px;box-shadow:0 22px 55px rgba(0,0,0,.45);
+  max-height:320px;overflow-y:auto;padding:8px;text-align:left;
+  opacity:0;transform:translateY(-6px);pointer-events:none;transition:.16s ease;
+}
+.results.open{opacity:1;transform:translateY(0);pointer-events:auto}
+.result-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border-radius:10px;cursor:pointer;transition:.12s}
+.result-item:hover{background:rgba(255,210,31,.08)}
+.result-item.disabled{cursor:not-allowed;opacity:.55}
+.result-item.disabled:hover{background:transparent}
+.result-name{font-size:13.5px;font-weight:650}
+.result-empty{padding:20px 13px;text-align:center;font-size:12px;color:var(--faint)}
+.mini-tag{font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 7px;border-radius:999px}
+.mini-tag.live{color:#0d3a2f;background:var(--cyan)}
+.mini-tag.soon{color:#8a97a8;background:rgba(160,175,193,.14);border:1px solid rgba(160,175,193,.2)}
+
+/* ---- city grid ---- */
+.section-label{margin-top:44px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);
+  opacity:0;animation:riseIn .6s ease forwards;animation-delay:.4s}
+.city-grid{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;text-align:left;
+  opacity:0;animation:riseIn .6s ease forwards;animation-delay:.45s}
+.city-card{
+  position:relative;padding:18px 18px 16px;border-radius:16px;overflow:hidden;
+  background:linear-gradient(180deg,#102036,#0c1828);border:1px solid #2b455f;
+  transition:.2s ease;cursor:pointer;
+}
+.city-card.active{border-color:rgba(66,231,208,.4)}
+.city-card.active:hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 18px 40px rgba(66,231,208,.14)}
+.city-card.locked{cursor:not-allowed;opacity:.6}
+.city-card.locked:hover{transform:none}
+.city-name{font-size:15.5px;font-weight:750;margin:0 0 4px}
+.city-meta{font-size:11px;color:var(--faint)}
+.city-status{position:absolute;top:14px;right:14px;font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+.city-status.live{color:#0d3a2f;background:var(--cyan);box-shadow:0 0 14px rgba(66,231,208,.4)}
+.city-status.soon{color:#a3afc0;background:rgba(160,175,193,.12);border:1px solid rgba(160,175,193,.22)}
+.city-arrow{margin-top:12px;font-size:12px;font-weight:700;color:var(--cyan);opacity:0;transform:translateX(-4px);transition:.18s}
+.city-card.active:hover .city-arrow{opacity:1;transform:translateX(0)}
+
+/* ---- empty state (states with no demo data yet) ---- */
+.empty-card{
+  margin-top:26px;padding:34px 28px;border-radius:20px;text-align:center;
+  background:linear-gradient(180deg,#122032,#0c1828);border:1px solid var(--border2);
+  opacity:0;animation:riseIn .6s ease forwards;animation-delay:.4s;
+}
+.empty-card h3{font-size:17px;margin:0 0 8px}
+.empty-card p{font-size:12.5px;color:var(--faint);max-width:440px;margin:0 auto 18px;line-height:1.7}
+.empty-cta{
+  display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;
+  background:linear-gradient(180deg,#ffe66d,#ffd21f 55%,#f0bc0b);color:#171300;font-weight:800;font-size:12.5px;
+  border:1px solid rgba(255,255,255,.3);cursor:pointer;text-decoration:none;
+}
+.empty-cta:hover{transform:translateY(-1px);filter:brightness(1.04)}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);z-index:50;
+  background:linear-gradient(180deg,#13283e,#0c1c2d);border:1px solid #496580;border-radius:14px;
+  padding:12px 18px;font-size:12.5px;color:#f6fbff;box-shadow:0 20px 45px rgba(0,0,0,.45);
+  opacity:0;pointer-events:none;transition:.25s ease;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="topbar">
+  <a href="index.html" class="back-link">← Back to India</a>
+  <div class="badge-live">LIVE PROTOTYPE · SIH 2026</div>
+</div>
+
+<div class="stage">
+  <span class="eyebrow" id="region-type-badge">State</span>
+  <h1 id="region-title">Select a <span>city or district</span></h1>
+  <p class="subcopy" id="region-subcopy">Choose a location inside this region to open its live emergency coordination dashboard.</p>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="city-input" type="text" autocomplete="off" placeholder="Search city or district…">
+    </div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="section-label" id="grid-label">Cities &amp; Districts</div>
+  <div class="city-grid" id="city-grid"></div>
+  <div class="empty-card" id="empty-card" style="display:none">
+    <h3>🚧 No live data for this region yet</h3>
+    <p>This SIH prototype currently demonstrates full coordination data for <b style="color:#fff">Uttar Pradesh → Lucknow</b> only. Other states and union territories will be added in a future rollout.</p>
+    <a href="state.html?state=uttar-pradesh&name=Uttar%20Pradesh&type=state" class="empty-cta">Go to Uttar Pradesh →</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Read the selected region from the URL (passed by index.html)
+   ============================================================ */
+const params = new URLSearchParams(window.location.search);
+const stateSlug = params.get('state') || 'uttar-pradesh';
+const stateName = params.get('name') || 'Uttar Pradesh';
+const stateType = params.get('type') || 'state';
+
+document.getElementById('region-type-badge').textContent = stateType === 'ut' ? 'Union Territory' : 'State';
+document.getElementById('region-title').innerHTML = `<span>${stateName}</span>`;
+document.getElementById('region-subcopy').textContent = `Choose a city or district inside ${stateName} to open its live emergency coordination dashboard.`;
+document.title = `SEVA-NEXUS — ${stateName}`;
+
+/* ============================================================
+   City / district data per state.
+   Only Uttar Pradesh → Lucknow is a fully live demo for SIH.
+   Other UP cities are listed but shown as "coming soon".
+   Any state not present here falls back to the empty state.
+   ============================================================ */
+const CITY_DATA = {
+  "uttar-pradesh": [
+    { name: "Lucknow",   meta: "Capital · Response HQ", active: true,  href: "SEVA_NEXUS_FRONT_PAGE.html" },
+    { name: "Kanpur",    meta: "Industrial zone",       active: false },
+    { name: "Varanasi",  meta: "Eastern UP",            active: false },
+    { name: "Agra",      meta: "Western UP",            active: false },
+    { name: "Prayagraj", meta: "Central UP",            active: false },
+    { name: "Ghaziabad", meta: "NCR region",            active: false },
+    { name: "Noida",     meta: "NCR region",            active: false },
+    { name: "Meerut",    meta: "Western UP",            active: false },
+  ]
+};
+
+const cities = CITY_DATA[stateSlug] || [];
+const cityGrid = document.getElementById('city-grid');
+const emptyCard = document.getElementById('empty-card');
+const gridLabel = document.getElementById('grid-label');
+const cityInputEl = document.getElementById('city-input');
+
+function cardHTML(c){
+  const statusClass = c.active ? 'live' : 'soon';
+  const statusText = c.active ? 'LIVE' : 'SOON';
+  const cardClass = c.active ? 'active' : 'locked';
+  return `
+    <div class="city-card ${cardClass}" onclick="${c.active ? `openCity('${c.href}')` : `showComingSoon('${c.name}')`}">
+      <div class="city-status ${statusClass}">${statusText}</div>
+      <h3 class="city-name">${c.name}</h3>
+      <div class="city-meta">${c.meta}</div>
+      ${c.active ? '<div class="city-arrow">Open Command Center →</div>' : ''}
+    </div>`;
+}
+
+function renderGrid(list){
+  if(!cities.length){
+    cityGrid.style.display = 'none';
+    gridLabel.style.display = 'none';
+    emptyCard.style.display = 'block';
+    return;
+  }
+  cityGrid.innerHTML = list.map(cardHTML).join('') ||
+    `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--faint);font-size:12.5px">No matching city found.</div>`;
+}
+renderGrid(cities);
+
+function openCity(href){ window.location.href = href; }
+
+function showComingSoon(name){
+  const toast = document.getElementById('toast');
+  toast.textContent = `📍 ${name} — prototype data coming soon. Try Lucknow for the full live demo.`;
+  toast.classList.add('show');
+  setTimeout(()=> toast.classList.remove('show'), 2600);
+}
+
+/* ---- inline search among this state's cities (only if data exists) ---- */
+const resultsBox = document.getElementById('results');
+function normalize(s){ return s.toLowerCase().replace(/[\s.]/g,''); }
+
+cityInputEl.addEventListener('input', (e) => {
+  const q = normalize(e.target.value);
+  if(!cities.length){
+    resultsBox.classList.remove('open');
+    return;
+  }
+  if(!q){ resultsBox.classList.remove('open'); renderGrid(cities); return; }
+
+  const matches = cities.filter(c => normalize(c.name).includes(q));
+  renderGrid(matches);
+
+  if(matches.length === 0){
+    resultsBox.innerHTML = `<div class="result-empty">No city or district matches "<b>${e.target.value}</b>" in ${stateName}.</div>`;
+  } else {
+    resultsBox.innerHTML = matches.map(c => `
+      <div class="result-item ${c.active ? '' : 'disabled'}" onclick="${c.active ? `openCity('${c.href}')` : `showComingSoon('${c.name}')`}">
+        <span class="result-name">${c.name}</span>
+        <span class="mini-tag ${c.active ? 'live' : 'soon'}">${c.active ? 'Live' : 'Soon'}</span>
+      </div>`).join('');
+  }
+  resultsBox.classList.add('open');
+});
+
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('.search-wrap')) resultsBox.classList.remove('open');
+});
+</script>
+
+</body>
+</html>
